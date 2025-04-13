@@ -18,6 +18,17 @@ body{
     height: fit-content;
 }
 
+.nav-link.active {
+    border-left: 2px solid white;
+    background-color: #5c5c5c;
+}
+
+.nav-link button i,
+.nav-link button p {
+    color: white;
+}
+
+
 .nav-left i{
     font-size: 5vh;
 
