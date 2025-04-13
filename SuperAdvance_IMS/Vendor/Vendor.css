@@ -1,0 +1,140 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+
+}
+
+button{
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+nav{
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.top-nav{
+
+    flex-direction: row;
+    justify-content: space-between;
+    display: flex;
+    align-items: center;
+}
+
+.nav-icons{
+    display: flex;
+    gap: 10px;
+}
+.nav-icons i{
+    font-size: 4vh;
+}
+
+.search-container{
+    flex-direction: row;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 3vh;
+    color: black;
+}
+
+.search-container  i{
+    color: black;
+    font-size: 3vh;
+}
+
+.search-bar{
+    background-color: rgb(210, 221, 221);
+    padding: 8px;
+    border-radius: 20px;
+    align-items: center;
+}
+
+.search-bar input{
+    font-size: 3vh;
+    border: none;
+    outline: none;
+    background-color: transparent;
+}
+
+.main-container{
+    background-color: antiquewhite;
+    display: flex;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding-bottom: 50px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: sans-serif;
+}
+
+#table-head {
+    background-color: #f3f4f6;
+    color: #333;
+    font-weight: bold;
+}
+
+th, td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+tr:hover {
+    background-color: #f9fafb;
+}
+
+td#status button{
+    font-weight: bold;
+    color: white;
+    background-color: green;
+    border-radius: 25px;
+    padding: 10px;
+    font-size: 1rem;
+}
+
+td#action .action-icon {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+td#action .action-icon button i {
+    font-size: 1rem;
+    color: #4b5563;
+    transition: color 0.2s ease;
+}
+
+td#action .action-icon button:hover i.fa-pen-to-square {
+    color: #2563eb;
+}
+
+td#action .action-icon button:hover i.fa-trash {
+    color: #dc2626;
+}
+
+table tr:nth-child(even):not(#table-head) {
+    background-color: #e2e2e2;
+}
+
+table tr:nth-child(odd):not(#table-head) {
+    background-color: #ffffff;
+}
+
+
+#mobile, #phone2, #city, #district, #status, #action, #head-mobile, #head-phone2, #head-city, #head-status, #head-district, #head-action{
+    text-align: center;
+}
