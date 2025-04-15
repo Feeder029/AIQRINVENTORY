@@ -61,3 +61,52 @@ nav{
     outline: none;
     background-color: transparent;
 }
+
+.main-container{
+    height: 100%;
+    width: 100%;
+    position: relative;
+    display: flex;
+    padding-bottom: 50px;
+    padding: 10px;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.data{
+    background-color: #3d3d3d;;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: fit-content;
+    justify-content: space-between;
+    border-radius: 25px;
+    align-items: center;
+    color: #faf9f6;
+}
+
+.data-left{
+    flex-direction: row;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.data-left img{
+    height: 100px;
+    width: 100px;
+    border-radius: 25px 0 0 25px;
+}
+
+.data-right{
+    display: flex;
+    flex-direction: column;
+    padding-right: 20px;
+    gap: 30px;
+    align-items: end;
+}
+
+.data-right button{
+    color: #faf9f6;
+    font-size: 30px;
+}
