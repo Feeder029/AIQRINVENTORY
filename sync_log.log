@@ -1,0 +1,64 @@
+2025-04-22 21:59:22,608 - INFO - Starting database synchronization
+2025-04-22 21:59:22,699 - INFO - Added new item from legacy system: 34 - First Bag
+2025-04-22 21:59:22,702 - INFO - Added new item from legacy system: 35 - School Bag
+2025-04-22 21:59:22,704 - INFO - Added new item from legacy system: 36 - Office Bag
+2025-04-22 21:59:22,706 - INFO - Added new item from legacy system: 37 - Leather Bag
+2025-04-22 21:59:22,708 - INFO - Added new item from legacy system: 38 - Travel Bag
+2025-04-22 21:59:22,710 - INFO - Added new item from legacy system: 39 - Gym Bag
+2025-04-22 21:59:22,712 - INFO - Added new item from legacy system: 40 - Handbag
+2025-04-22 21:59:22,714 - INFO - Added new item from legacy system: 41 - Laptop Bag
+2025-04-22 21:59:22,718 - INFO - Added new item from legacy system: 43 - Sports Bag
+2025-04-22 21:59:22,720 - INFO - Added new item from legacy system: 45 - First Aid Bag
+2025-04-22 21:59:22,723 - INFO - Added new item from legacy system: 49 - Hiking Bag
+2025-04-22 21:59:22,723 - INFO - Synchronization completed. Added: 11, Updated: 0
+2025-04-22 21:59:23,041 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-04-22 21:59:23,041 - INFO - [33mPress CTRL+C to quit[0m
+2025-04-22 21:59:23,043 - INFO -  * Restarting with stat
+2025-04-22 21:59:23,401 - INFO - Starting database synchronization
+2025-04-22 21:59:23,472 - INFO - Added new item from legacy system: 34 - First Bag
+2025-04-22 21:59:23,476 - INFO - Added new item from legacy system: 35 - School Bag
+2025-04-22 21:59:23,479 - INFO - Added new item from legacy system: 36 - Office Bag
+2025-04-22 21:59:23,481 - INFO - Added new item from legacy system: 37 - Leather Bag
+2025-04-22 21:59:23,484 - INFO - Added new item from legacy system: 38 - Travel Bag
+2025-04-22 21:59:23,486 - INFO - Added new item from legacy system: 39 - Gym Bag
+2025-04-22 21:59:23,488 - INFO - Added new item from legacy system: 40 - Handbag
+2025-04-22 21:59:23,491 - INFO - Added new item from legacy system: 41 - Laptop Bag
+2025-04-22 21:59:23,493 - INFO - Added new item from legacy system: 43 - Sports Bag
+2025-04-22 21:59:23,495 - INFO - Added new item from legacy system: 45 - First Aid Bag
+2025-04-22 21:59:23,498 - INFO - Added new item from legacy system: 49 - Hiking Bag
+2025-04-22 21:59:23,498 - INFO - Synchronization completed. Added: 11, Updated: 0
+2025-04-22 21:59:23,511 - WARNING -  * Debugger is active!
+2025-04-22 21:59:23,514 - INFO -  * Debugger PIN: 320-864-610
+2025-04-22 21:59:54,507 - INFO - Starting database synchronization
+2025-04-22 21:59:54,576 - INFO - Added new item from legacy system: 34 - First Bag
+2025-04-22 21:59:54,578 - INFO - Added new item from legacy system: 35 - School Bag
+2025-04-22 21:59:54,580 - INFO - Added new item from legacy system: 36 - Office Bag
+2025-04-22 21:59:54,583 - INFO - Added new item from legacy system: 37 - Leather Bag
+2025-04-22 21:59:54,585 - INFO - Added new item from legacy system: 38 - Travel Bag
+2025-04-22 21:59:54,587 - INFO - Added new item from legacy system: 39 - Gym Bag
+2025-04-22 21:59:54,589 - INFO - Added new item from legacy system: 40 - Handbag
+2025-04-22 21:59:54,591 - INFO - Added new item from legacy system: 41 - Laptop Bag
+2025-04-22 21:59:54,593 - INFO - Added new item from legacy system: 43 - Sports Bag
+2025-04-22 21:59:54,596 - INFO - Added new item from legacy system: 45 - First Aid Bag
+2025-04-22 21:59:54,598 - INFO - Added new item from legacy system: 49 - Hiking Bag
+2025-04-22 21:59:54,598 - INFO - Synchronization completed. Added: 11, Updated: 0
+2025-04-22 21:59:54,632 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-04-22 21:59:54,632 - INFO - [33mPress CTRL+C to quit[0m
+2025-04-22 21:59:54,633 - INFO -  * Restarting with stat
+2025-04-22 21:59:54,976 - INFO - Starting database synchronization
+2025-04-22 21:59:55,038 - INFO - Added new item from legacy system: 34 - First Bag
+2025-04-22 21:59:55,040 - INFO - Added new item from legacy system: 35 - School Bag
+2025-04-22 21:59:55,043 - INFO - Added new item from legacy system: 36 - Office Bag
+2025-04-22 21:59:55,045 - INFO - Added new item from legacy system: 37 - Leather Bag
+2025-04-22 21:59:55,047 - INFO - Added new item from legacy system: 38 - Travel Bag
+2025-04-22 21:59:55,049 - INFO - Added new item from legacy system: 39 - Gym Bag
+2025-04-22 21:59:55,051 - INFO - Added new item from legacy system: 40 - Handbag
+2025-04-22 21:59:55,053 - INFO - Added new item from legacy system: 41 - Laptop Bag
+2025-04-22 21:59:55,055 - INFO - Added new item from legacy system: 43 - Sports Bag
+2025-04-22 21:59:55,057 - INFO - Added new item from legacy system: 45 - First Aid Bag
+2025-04-22 21:59:55,059 - INFO - Added new item from legacy system: 49 - Hiking Bag
+2025-04-22 21:59:55,059 - INFO - Synchronization completed. Added: 11, Updated: 0
+2025-04-22 21:59:55,074 - WARNING -  * Debugger is active!
+2025-04-22 21:59:55,077 - INFO -  * Debugger PIN: 320-864-610

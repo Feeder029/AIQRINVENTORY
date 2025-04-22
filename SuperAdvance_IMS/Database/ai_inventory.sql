@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 20, 2025 at 07:18 AM
+-- Generation Time: Apr 22, 2025 at 04:43 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -75,7 +75,7 @@ CREATE TABLE `customername` (
 
 CREATE TABLE `item` (
   `ItemID` int(11) NOT NULL,
-  `I_Code` varchar(255) DEFAULT NULL,
+  `I_LegacyCode` varchar(255) DEFAULT NULL,
   `I_Name` varchar(255) DEFAULT NULL,
   `I_Discount` decimal(10,2) DEFAULT NULL,
   `I_UnitPrice` decimal(10,2) DEFAULT NULL,
@@ -84,6 +84,7 @@ CREATE TABLE `item` (
   `I_Stock` int(11) DEFAULT NULL,
   `I_Description` text DEFAULT NULL,
   `I_QRCode` longblob DEFAULT NULL,
+  `I_QRPath` int(11) NOT NULL,
   `I_LastUpdate` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `I_Suggestion` text DEFAULT NULL,
   `I_SuggestedPrice` decimal(10,2) DEFAULT NULL
@@ -248,6 +249,70 @@ ALTER TABLE `vendoraddress`
 --
 ALTER TABLE `vendorname`
   ADD PRIMARY KEY (`VNameID`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `customer`
+--
+ALTER TABLE `customer`
+  MODIFY `CustomerID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `customeraddress`
+--
+ALTER TABLE `customeraddress`
+  MODIFY `CustomerAddressID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `customername`
+--
+ALTER TABLE `customername`
+  MODIFY `CNNameID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `item`
+--
+ALTER TABLE `item`
+  MODIFY `ItemID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=135;
+
+--
+-- AUTO_INCREMENT for table `purchase`
+--
+ALTER TABLE `purchase`
+  MODIFY `purchaseID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `sale`
+--
+ALTER TABLE `sale`
+  MODIFY `saleID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `user`
+--
+ALTER TABLE `user`
+  MODIFY `userID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `vendor`
+--
+ALTER TABLE `vendor`
+  MODIFY `VendorID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `vendoraddress`
+--
+ALTER TABLE `vendoraddress`
+  MODIFY `VendorAddressID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `vendorname`
+--
+ALTER TABLE `vendorname`
+  MODIFY `VNameID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
