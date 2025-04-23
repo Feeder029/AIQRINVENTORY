@@ -2,7 +2,7 @@
 from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 import mysql.connector 
-import itemsynchronize
+import synchronize
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -17,7 +17,7 @@ def get_connection():
 
 @app.route('/api/displayitems', methods=['GET'])
 def GetProducts():
-    itemsynchronize.synchronize_inventory()
+    synchronize.synchronize_inventory()
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
