@@ -329,6 +329,320 @@ def add_customer(customers):
     except mysql.connector.Error as err:
         print(f"Database Error: {err}")
 
+def synchronize_vendor():
+    """Synchronize vendors from legacy database to AI inventory"""
+    try:
+        # Get legacy vendors
+        legacy_conn = get_connection('shop_inventory')
+        legacy_query = """
+            SELECT `vendorID`, `fullName`, `email`, `mobile`, `phone2`, `address`, `address2`, 
+              `city`, `district`, `status`, `createdOn` 
+            FROM `vendor`
+        """
+        legacy_vendor = fetch_records(legacy_conn, legacy_query)
+        legacy_conn.close()
+        
+        # Get current AI inventory vendors
+        ai_conn = get_connection('ai_inventory')
+        ai_query = """
+            SELECT `VendorID`, `VNameID`, `VendorAddressID`, `V_Email`, `V_Mobile`, `V_Mobile2`, `V_district`, 
+              `V_status`, `V_LegacyID`, `VA_Street`, `VA_Barangay`, `VA_District`, 
+              `VA_City`, `VA_Province`, `VN_FirstName`, `VN_LastName`, `VN_MiddleName`, `VN_Suffix`,
+              `V_LFullName` 
+            FROM `vendorlist` 
+        """
+        ai_vendor = fetch_records(ai_conn, ai_query)
+        ai_conn.close()
+
+        # Convert AI items to a dictionary for easy access
+        ai_vendor_dict = {str(vendor["V_LegacyID"]): vendor for vendor in ai_vendor}
+        
+        vendor_added = 0
+        vendor_updated = 0
+        vendor_unchanged = 0
+
+        for L_Vendor in legacy_vendor:
+            legacy_code = str(L_Vendor["vendorID"])
+
+            if legacy_code not in ai_vendor_dict:
+                add_vendor(L_Vendor)
+                vendor_added += 1
+            else:
+                # Update existing vendor only if needed
+                was_updated = update_vendor(L_Vendor, ai_vendor_dict[legacy_code])
+                if was_updated:
+                    vendor_updated += 1
+                else:
+                    vendor_unchanged += 1
+
+        print(f"Vendors added: {vendor_added}")
+        print(f"Vendors updated: {vendor_updated}")
+        print(f"Vendors unchanged: {vendor_unchanged}")
+            
+    except mysql.connector.Error as err:
+        print(f"Synchronization Error: {err}")
+
+def update_vendor(legacy_vendor, ai_vendor):
+    """Update existing vendor in AI inventory database only if data has changed"""
+    try:
+        conn = get_connection('ai_inventory')
+        cursor = conn.cursor()
+        updates_made = []
+        
+        # Check and update vendor name if changed
+        if legacy_vendor["fullName"] != ai_vendor["V_LFullName"]:
+            name_query = """
+                UPDATE `vendorname` 
+                SET `V_LFullName` = %s
+                WHERE `VNameID` = %s
+            """
+            cursor.execute(name_query, (legacy_vendor["fullName"], ai_vendor["VNameID"]))
+            updates_made.append("name")
+        
+        # Check and update vendor address if any field changed
+        address_changed = (
+            legacy_vendor["address"] != ai_vendor["VA_Street"] or
+            legacy_vendor["district"] != ai_vendor["VA_District"] or
+            legacy_vendor["city"] != ai_vendor["VA_City"]
+        )
+        
+        if address_changed:
+            address_query = """
+                UPDATE `vendoraddress` 
+                SET `VA_Street` = %s, `VA_District` = %s, `VA_City` = %s
+                WHERE `VendorAddressID` = %s
+            """
+            cursor.execute(address_query, (
+                legacy_vendor["address"],
+                legacy_vendor["district"],
+                legacy_vendor["city"],
+                ai_vendor["VendorAddressID"]
+            ))
+            updates_made.append("address")
+        
+        # Check and update vendor details if any field changed
+        details_changed = (
+            legacy_vendor["email"] != ai_vendor["V_Email"] or
+            legacy_vendor["mobile"] != ai_vendor["V_Mobile"] or
+            legacy_vendor["phone2"] != ai_vendor["V_Mobile2"] or
+            legacy_vendor["status"] != ai_vendor["V_status"]
+        )
+        
+        if details_changed:
+            vendor_query = """
+                UPDATE `vendor` 
+                SET `V_Email` = %s, `V_Mobile` = %s, `V_Mobile2` = %s, `V_status` = %s
+                WHERE `VendorID` = %s
+            """
+            cursor.execute(vendor_query, (
+                legacy_vendor["email"],
+                legacy_vendor["mobile"],
+                legacy_vendor["phone2"],
+                legacy_vendor["status"],
+                ai_vendor["VendorID"]
+            ))
+            updates_made.append("details")
+        
+        # Only commit if any changes were made
+        if updates_made:
+            conn.commit()
+            print(f"Updated vendor {legacy_vendor['vendorID']}: {', '.join(updates_made)}")
+        
+        conn.close()
+        return len(updates_made) > 0  # Return True if any updates were made
+            
+    except mysql.connector.Error as err:
+        print(f"Update Error: {err}")
+        return False
+    
+def add_vendor(vendors): 
+    """Add vendors to AI inventory database"""
+    try:
+        with get_connection('ai_inventory') as conn:
+            cursor = conn.cursor()
+            
+            Nquery = """
+              INSERT INTO `vendorname`(`V_LFullName`) VALUES (%s)
+            """
+            cursor.execute(Nquery, (vendors["fullName"],))
+
+            vendorname_id = cursor.lastrowid  # Get the auto-generated primary key
+            
+            conn.commit()
+
+            Aquery = """
+            INSERT INTO `vendoraddress`(`VA_Street`,`VA_District`, `VA_City`) VALUES (%s,%s,%s)        
+            """
+            cursor.execute(Aquery, (vendors["address"],vendors["district"],vendors["city"]))
+
+            vendoraddress = cursor.lastrowid  # Get the auto-generated primary key
+
+            conn.commit()
+
+            Vquery = """
+            INSERT INTO `vendor`(`VNameID`, `VendorAddressID`, `V_Email`, `V_Mobile`, `V_Mobile2`, `V_status`, `V_LegacyID`) 
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """
+
+            cursor.execute(Vquery, (vendorname_id,vendoraddress,vendors["email"],vendors["mobile"],vendors["phone2"],vendors["status"],vendors["vendorID"]))
+
+            conn.commit()
+
+            print(f"Vendor successfully inserted")
+            
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+
+def synchronize_purchase():
+    """Synchronize purchase from legacy database to AI inventory"""
+    try:
+        # Get legacy purchase
+        legacy_conn = get_connection('shop_inventory')
+        legacy_query = """
+        SELECT a.purchaseID, b.productID, a.itemNumber, c.vendorID, a.quantity, purchaseDate FROM purchase a
+          JOIN item b ON a.itemNumber = b.itemNumber
+          JOIN vendor c ON a.vendorID = c.vendorID
+        """
+        legacy_purchase = fetch_records(legacy_conn, legacy_query)
+        legacy_conn.close()
+        
+        # Get current AI inventory purchase
+        ai_conn = get_connection('ai_inventory')
+        ai_query = """
+            SELECT purchaseID, ItemID, VendorID, P_Date, P_Quantity, P_LegacyID FROM purchase 
+        """
+        ai_purchase = fetch_records(ai_conn, ai_query)
+        
+        # Convert AI items to a dictionary for easy access
+        ai_purchase_dict = {str(purchase["P_LegacyID"]): purchase for purchase in ai_purchase}
+       
+        purchase_added = 0
+        purchase_updated = 0
+        
+        # Process all legacy items
+        for legacy_purchases in legacy_purchase:
+            legacy_code = str(legacy_purchases["purchaseID"])
+            
+            if legacy_code not in ai_purchase_dict:
+                Pid = legacy_purchases["productID"]
+                Vid = legacy_purchases["vendorID"]
+                
+                itemIDquery = f"SELECT ItemID FROM item WHERE I_LegacyCode = '{Pid}'"
+                vendorIDquery = f"SELECT VendorID FROM vendor WHERE V_LegacyID = '{Vid}'"
+     
+                ProductID_result = fetch_records(ai_conn, itemIDquery)
+                VendorID_result = fetch_records(ai_conn, vendorIDquery)
+
+                # Extract the actual ID values from the query results
+                # Check if results exist and extract the first item's ItemID/VendorID
+                if ProductID_result and len(ProductID_result) > 0:
+                    ProductID = ProductID_result[0]["ItemID"]
+                else:
+                    print(f"No matching product found for legacy code: {Pid}")
+                    continue
+                    
+                if VendorID_result and len(VendorID_result) > 0:
+                    VendorID = VendorID_result[0]["VendorID"]
+                else:
+                    print(f"No matching vendor found for legacy ID: {Vid}")
+                    continue
+
+                add_purchase(legacy_purchases, ProductID, VendorID)
+                purchase_added += 1
+
+        print(f"Synchronization completed: {purchase_added} items added, {purchase_updated} items updated")
+        ai_conn.close()
+
+            
+    except mysql.connector.Error as err:
+        print(f"Synchronization Error: {err}")
+
+def add_purchase(purchase, ProductID, VendorID):
+    try:
+        with get_connection('ai_inventory') as conn:
+            cursor = conn.cursor()
+            
+            query = """
+            INSERT INTO purchase(ItemID, VendorID, P_Date, P_Quantity, P_LegacyID) VALUES (%s,%s,%s,%s,%s)
+            """
+
+            cursor.execute(query, (
+                ProductID, VendorID, purchase['purchaseDate'], purchase['quantity'], purchase['purchaseID']
+            ))
+            
+            conn.commit()
+            print(f"Successfully inserted purchase with legacy ID: {purchase['purchaseID']}")
+
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+
+    """Synchronize sale from legacy database to AI inventory"""
+    try:
+        # Get legacy purchase
+        legacy_conn = get_connection('shop_inventory')
+        legacy_query = """
+        SELECT a.purchaseID, b.productID, a.itemNumber, c.vendorID, a.quantity, purchaseDate FROM purchase a
+          JOIN item b ON a.itemNumber = b.itemNumber
+          JOIN vendor c ON a.vendorID = c.vendorID
+        """
+        legacy_purchase = fetch_records(legacy_conn, legacy_query)
+        legacy_conn.close()
+        
+        # Get current AI inventory purchase
+        ai_conn = get_connection('ai_inventory')
+        ai_query = """
+            SELECT purchaseID, ItemID, VendorID, P_Date, P_Quantity, P_LegacyID FROM purchase 
+        """
+        ai_purchase = fetch_records(ai_conn, ai_query)
+        
+        # Convert AI items to a dictionary for easy access
+        ai_purchase_dict = {str(purchase["P_LegacyID"]): purchase for purchase in ai_purchase}
+       
+        purchase_added = 0
+        purchase_updated = 0
+        
+        # Process all legacy items
+        for legacy_purchases in legacy_purchase:
+            legacy_code = str(legacy_purchases["purchaseID"])
+            
+            if legacy_code not in ai_purchase_dict:
+                Pid = legacy_purchases["productID"]
+                Vid = legacy_purchases["vendorID"]
+                
+                itemIDquery = f"SELECT ItemID FROM item WHERE I_LegacyCode = '{Pid}'"
+                vendorIDquery = f"SELECT VendorID FROM vendor WHERE V_LegacyID = '{Vid}'"
+     
+                ProductID_result = fetch_records(ai_conn, itemIDquery)
+                VendorID_result = fetch_records(ai_conn, vendorIDquery)
+
+                # Extract the actual ID values from the query results
+                # Check if results exist and extract the first item's ItemID/VendorID
+                if ProductID_result and len(ProductID_result) > 0:
+                    ProductID = ProductID_result[0]["ItemID"]
+                else:
+                    print(f"No matching product found for legacy code: {Pid}")
+                    continue
+                    
+                if VendorID_result and len(VendorID_result) > 0:
+                    VendorID = VendorID_result[0]["VendorID"]
+                else:
+                    print(f"No matching vendor found for legacy ID: {Vid}")
+                    continue
+
+                add_purchase(legacy_purchases, ProductID, VendorID)
+                purchase_added += 1
+
+        print(f"Synchronization completed: {purchase_added} items added, {purchase_updated} items updated")
+        ai_conn.close()
+
+            
+    except mysql.connector.Error as err:
+        print(f"Synchronization Error: {err}")
+
+
+
+
+
 
 
 # @app.route('/sync', methods=['GET'])
@@ -341,6 +655,9 @@ def add_customer(customers):
 #         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
-    synchronize_inventory()
-    synchronize_customer()
+    synchronize_purchase()
+    print("start")
+    # synchronize_vendor()
+    # synchronize_inventory()
+    # synchronize_customer()
     # app.run(debug=True, port=5000)  # Running on Port 5000
