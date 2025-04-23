@@ -16,6 +16,7 @@
                 <button><i class='bx bx-printer'></i></button>
                 <button><i class='bx bx-qr-scan' ></i></button>
                 <button><i class="fa-regular fa-square-plus"></i></button>
+                <!-- <button> Synchronize to Legacy </button> -->
             </div>
         </div>
         <div class="search-container">
@@ -26,81 +27,10 @@
             </div>
         </div>
     </nav>
-    <div class="main-container">
-        <div class="item-container">
-            <div class="item-image">
-                <img src="../Img/pfp.jpg" alt="">
-            </div>
-            <div class="item-details">
-                <h2>Nibba the Explorer</h2>
-                <p>Price: <span>₱ 69.99</span></p>
-                <p>Stocks: <span>55</span></p>
-            </div>
-            <div class="item-icons">
-                <details class="warning">
-                    <summary><i class="fa-solid fa-triangle-exclamation"></i></summary>
-                    <div class="warning-details">
-                        <div class="details">
-                            <h2>WARNING!</h2>
-                            <p>Your price is currently underprice based on data.</p>
-                        </div>
-                        <div class="warning-buttons">
-                            <button id="ignore">Ignore</button>
-                            <button id="seemore">See More</button>
-                        </div>
-                    </div>
-                </details>
-                <details class="dropdown">
-                    <summary><i class='bx bx-dots-horizontal-rounded'></i></summary>
-                    <div class="dropdown-menu">
-                        <div class="dropdown-option"><i class="fa-solid fa-eye"></i> View More</div>
-                        <div class="separator">&nbsp;</div>
-                        <div class="dropdown-option"><i class="fa-solid fa-pen-to-square"></i> Edit</div>
-                        <div class="separator">&nbsp;</div>
-                        <div class="dropdown-option"><i class="fa-solid fa-trash"></i> Delete</div>
-                        <div class="separator">&nbsp;</div>
-                        <div class="dropdown-option"><i class="fa-solid fa-square-plus"></i> Add Quantity</div>
-                    </div>
-                </details>
-            </div>
-        </div>
-             <div class="item-container">
-            <div class="item-image">
-                <img src="../Img/pfp.jpg" alt="">
-            </div>
-            <div class="item-details">
-                <h2>Nibba the Explorer</h2>
-                <p>Price: <span>₱ 69.99</span></p>
-                <p>Stocks: <span>55</span></p>
-            </div>
-            <div class="item-icons">
-                <details class="warning">
-                    <summary><i class="fa-solid fa-triangle-exclamation"></i></summary>
-                    <div class="warning-details">
-                        <div class="details">
-                            <h2>WARNING!</h2>
-                            <p>Your price is currently underprice based on data.</p>
-                        </div>
-                        <div class="warning-buttons">
-                            <button id="ignore">Ignore</button>
-                            <button id="seemore">See More</button>
-                        </div>
-                    </div>
-                </details>
-                <details class="dropdown">
-                    <summary><i class='bx bx-dots-horizontal-rounded'></i></summary>
-                    <div class="dropdown-menu">
-                        <div class="dropdown-option"><i class="fa-solid fa-eye"></i> View More</div>
-                        <div class="separator">&nbsp;</div>
-                        <div class="dropdown-option"><i class="fa-solid fa-pen-to-square"></i> Edit</div>
-                        <div class="separator">&nbsp;</div>
-                        <div class="dropdown-option"><i class="fa-solid fa-trash"></i> Delete</div>
-                        <div class="separator">&nbsp;</div>
-                        <div class="dropdown-option"><i class="fa-solid fa-square-plus"></i> Add Quantity</div>
-                    </div>
-                </details>
-            </div>
-        </div>
+    <div class="main-container" id="items_display">
+
     </div>
+
+    <script src="item.js?v=1.1"></script>
 </body>
 </html>
