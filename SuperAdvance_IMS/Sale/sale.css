@@ -15,7 +15,7 @@
         .container {
             max-width: 100%;
             margin: 0 auto;
-            padding: 20px;
+            padding: 15px;
         }
         
         header {
@@ -40,15 +40,18 @@
         
         button {
             padding: 10px 16px;
-            border: none;
             border-radius: 8px;
-            font-weight: 500;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             gap: 8px;
+            background: transparent; /* Makes the background invisible */
+            border: none; /* Removes any border */
+            color: #000; /* Optional: Set text color */
         }
+        
         
         .btn-primary {
             background-color: #000;

@@ -64,7 +64,7 @@ nav{
 
 .main-container{
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     grid-column: auto;
     position: relative;
     padding: 10px;
