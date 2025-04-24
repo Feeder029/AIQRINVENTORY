@@ -162,7 +162,43 @@ def GetPurchase():
         if 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
-            
+
+@app.route('/api/displaysales', methods=['GET'])
+def GetSales():
+    synchronize.add_sale
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        sql = """
+          SELECT 
+          `S_LegacyID`, `C_LFullName`, DATE_FORMAT(`S_Date`, '%M %e %Y') AS `S_Date`, `I_Name`, 
+          `S_Quantity`, `S_Discount`, `S_UnitPrice`,
+          ROUND((`S_UnitPrice` * `S_Quantity`) - ((`S_UnitPrice` * `S_Quantity`) * (`S_Discount` / 100)), 2) AS `TotalPrice`
+          FROM 
+           `salelist`
+           ORDER BY `S_Date` ASC, `S_LegacyID` DESC;  
+         """
+
+        cursor.execute(sql)
+
+        sales = cursor.fetchall()
+
+        return jsonify({"sales": sales, "status": "success"})
+
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+        return jsonify({"status": "error", "message": str(err)}), 500
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+
+
+
+
 # Run the application
 if __name__ == '__main__':
     app.run(debug=True)

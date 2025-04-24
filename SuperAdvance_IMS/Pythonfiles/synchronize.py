@@ -624,17 +624,17 @@ def synchronize_sale():
         # Get legacy sales
         legacy_conn = get_connection('shop_inventory')
         legacy_query = """
-        SELECT a.saleID, a.itemNumber, b.productID, c.customerID, a.saleDate, a.quantity FROM `sale` a
-         JOIN item b ON a.itemNumber = b.itemNumber
-         JOIN customer c ON a.customerID = c.customerID
+          SELECT a.saleID, a.itemNumber, b.productID, c.customerID, a.saleDate, a.quantity,a.discount,a.unitPrice FROM `sale` a
+          JOIN item b ON a.itemNumber = b.itemNumber
+          JOIN customer c ON a.customerID = c.customerID;
         """
         legacy_sale = fetch_records(legacy_conn, legacy_query)
         legacy_conn.close()
         
         # Get current AI inventory sales
         ai_conn = get_connection('ai_inventory')
-        ai_query = """
-            SELECT `saleID`, `ItemID`, `customerID`, `S_Date`, `S_Quantity`,`S_LegacyID` FROM `sale` 
+        ai_query = """ 
+           SELECT `saleID`, `ItemID`, `customerID`, `S_Date`, `S_Quantity`, `S_LegacyID`, `S_Discount`, `S_UnitPrice` FROM `sale`
         """
         ai_sale = fetch_records(ai_conn, ai_query)
         
@@ -683,7 +683,10 @@ def synchronize_sale():
                 
                 # Check if any data has changed
                 if (ai_sale_record["S_Quantity"] != legacy_sales["quantity"] or 
-                    ai_sale_record["S_Date"] != legacy_sales["saleDate"]):
+                    ai_sale_record["S_Date"] != legacy_sales["saleDate"] or
+                    ai_sale_record["S_Discount"] != legacy_sales["discount"] or
+                    ai_sale_record["S_UnitPrice"] != legacy_sales["unitPrice"]                   
+                    ):
                     needs_update = True
                 
                 # Check if relationships have changed
@@ -709,11 +712,11 @@ def add_sale(sale, ProductID, CustomerID):
             cursor = conn.cursor()
             
             query = """
-            INSERT INTO `sale`(`ItemID`, `customerID`, `S_Date`, `S_Quantity`, `S_LegacyID`) VALUES (%s,%s,%s,%s,%s)
+            INSERT INTO `sale`(`ItemID`, `customerID`, `S_Date`, `S_Quantity`, `S_LegacyID`, `S_Discount`, `S_UnitPrice`) VALUES (%s,%s,%s,%s,%s,%s,%s)
             """
 
             cursor.execute(query, (
-                ProductID, CustomerID, sale['saleDate'], sale['quantity'], sale['saleID']
+                ProductID, CustomerID, sale['saleDate'], sale['quantity'], sale['saleID'], sale['discount'], sale['unitPrice']
             ))
             
             conn.commit()
@@ -728,12 +731,12 @@ def update_sale(sale, ProductID, CustomerID, saleID):
             cursor = conn.cursor()
             
             query = """
-            UPDATE `sale` SET `ItemID` = %s, `customerID` = %s, `S_Date` = %s, `S_Quantity` = %s 
+            UPDATE `sale` SET `ItemID` = %s, `customerID` = %s, `S_Date` = %s, `S_Quantity` = %s, `S_Discount` = %s, `S_UnitPrice` = %s
             WHERE `saleID` = %s
             """
 
             cursor.execute(query, (
-                ProductID, CustomerID, sale['saleDate'], sale['quantity'], saleID
+                ProductID, CustomerID, sale['saleDate'], sale['quantity'], sale['discount'], sale['unitPrice'], saleID
             ))
             
             conn.commit()
@@ -756,7 +759,7 @@ if __name__ == "__main__":
     print("start")
 
     synchronize_sale()
-    synchronize_purchase()
+    # synchronize_purchase()
     # synchronize_vendor()
     # synchronize_inventory()
     # synchronize_customer()
