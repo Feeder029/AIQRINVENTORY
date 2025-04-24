@@ -113,7 +113,7 @@
         
         .sales-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: left;
             align-items: center;
             margin-bottom: 20px;
         }
@@ -132,7 +132,7 @@
             border: 1px solid #eaeaea;
             border-radius: 8px;
             font-size: 14px;
-            width: 280px;
+            width: 500px;
             background-color: #fff;
             transition: all 0.2s ease;
         }
@@ -153,14 +153,14 @@
         
         .sales-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 20px;
         }
         
         .sale-card {
-            background-color: #fff;
+            background-color: #f0f0f0;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.13);
             overflow: hidden;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
@@ -309,6 +309,9 @@
             padding: 0;
             cursor: pointer;
           }
+
+          
+        
         
         @media (max-width: 768px) {
             .sales-summary {
