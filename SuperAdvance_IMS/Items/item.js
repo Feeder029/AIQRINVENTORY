@@ -103,3 +103,110 @@ function displayItems() {
 
 // Call the function to display items
 displayItems();
+
+// Add this to your item.js file
+
+// Modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Get modal elements
+    const addItemButton = document.querySelector('.btn-primary');
+    const modal = document.getElementById('addItemModal');
+    const closeModal = document.querySelector('.close-modal');
+    const clearButton = document.querySelector('.btn-clear');
+    const addItemForm = document.getElementById('addItemForm');
+    const imageInput = document.getElementById('itemImage');
+    const imagePreview = document.getElementById('imagePreview');
+    
+    // Open modal when Add Item button is clicked
+    addItemButton.addEventListener('click', function() {
+        modal.classList.add('show');
+    });
+    
+    // Close modal when X is clicked
+    closeModal.addEventListener('click', function() {
+        modal.classList.remove('show');
+    });
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.classList.remove('show');
+        }
+    });
+    
+    // Clear form
+    function clearForm() {
+        addItemForm.reset();
+        imagePreview.style.backgroundImage = '';
+        imagePreview.classList.remove('has-image');
+        imagePreview.innerHTML = '<i class="fa-solid fa-image"></i><span>No image selected</span>';
+    }
+    
+    // Clear button functionality
+    clearButton.addEventListener('click', clearForm);
+    
+    // Image preview functionality
+    imagePreview.addEventListener('click', function() {
+        imageInput.click();
+    });
+    
+    imageInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.style.backgroundImage = `url('${e.target.result}')`;
+                imagePreview.classList.add('has-image');
+                imagePreview.innerHTML = '';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Form submission
+    addItemForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Get form values
+        const itemName = document.getElementById('itemName').value;
+        const unitPrice = document.getElementById('unitPrice').value;
+        const discount = document.getElementById('discount').value;
+        const status = document.getElementById('status').value;
+        const stocks = document.getElementById('stocks').value;
+        const description = document.getElementById('description').value;
+        
+        // Get image file (if any)
+        const imageFile = imageInput.files[0];
+        
+        // Create FormData object for file upload
+        const formData = new FormData();
+        formData.append('itemName', itemName);
+        formData.append('unitPrice', unitPrice);
+        formData.append('discount', discount);
+        formData.append('status', status);
+        formData.append('stocks', stocks);
+        formData.append('description', description);
+        
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        
+        // For now, just log the data and close the modal
+        console.log('Form submitted with data:', {
+            itemName,
+            unitPrice,
+            discount,
+            status,
+            stocks,
+            description,
+            image: imageFile ? imageFile.name : 'No image'
+        });
+        
+        // Close modal after submission
+        modal.classList.remove('show');
+        clearForm();
+        
+        // Temporary: Show success message
+        alert('Item added successfully! (Demo mode)');
+    });
+});

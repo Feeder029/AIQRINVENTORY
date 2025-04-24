@@ -3,34 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Inventory</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <title>Document</title>
-    <link rel="stylesheet" href="Item.css?v=1.0.10">
+    <link rel="stylesheet" href="Item.css?v=1.0.12">
 </head>
 <body>
-    <nav class="nav">
-        <div class="top-nav">
-            <h1>ITEM LISTS</h1>
-            <div class="nav-icons">
-                <button><i class='bx bx-printer'></i></button>
-                <button><i class='bx bx-qr-scan' ></i></button>
-                <button><i class="fa-regular fa-square-plus"></i></button>
-                <!-- <button> Synchronize to Legacy </button> -->
+    <div class="container">
+        <header>
+            <div class="logo">Item Inventory</div>
+            <div class="header-actions">
+                <button class="btn-secondary">
+                    <i class='bx bx-printer'></i>
+                    Print
+                </button>
+                <button class="btn-secondary">
+                    <i class='bx bx-qr-scan'></i>
+                    QR Scan
+                </button>
+                <button class="btn-primary">
+                    <i class="fa-regular fa-square-plus"></i>
+                    Add Item
+                </button>
             </div>
-        </div>
-        <div class="search-container">
-            <button><i class="fa-solid fa-filter"></i></button>
-            <div class="search-bar">
-                <button><i class="fa-solid fa-magnifying-glass"></i></button>
-                <input type="search" name="" id="" placeholder="Search Item">
-            </div>
-        </div>
-    </nav>
-    <div class="main-container" id="items_display">
+        </header>
 
+        <div class="items-header">
+            <button><i class="fa-solid fa-filter"></i></button>
+            <div class="search-container">
+                <span class="search-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </span>
+                <input type="text" class="search-input" placeholder="Search items...">
+            </div>
+        </div>
+
+        <div class="main-container" id="items_display">
+            <!-- JS ITEMS DISPLAY INPUT HERE -->
+        </div>
+
+        <div class="pagination">
+            <div class="page-info"></div>
+            <div class="page-controls" id="page-controls">
+                <!-- Pagination buttons will be added by JavaScript -->
+            </div>
+        </div>
     </div>
 
-    <script src="item.js?v=1.1"></script>
+    <!-- Add this to your items.html before the closing body tag -->
+<div id="addItemModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add New Item</h2>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="addItemForm">
+                <div class="form-group">
+                    <label for="itemName">Item Name</label>
+                    <input type="text" id="itemName" class="form-input" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="unitPrice">Unit Price</label>
+                        <input type="number" id="unitPrice" class="form-input" min="0" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="discount">Discount (%)</label>
+                        <input type="number" id="discount" class="form-input" min="0" max="100" value="0">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" class="form-select">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="discontinued">Discontinued</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stocks">Stocks</label>
+                        <input type="number" id="stocks" class="form-input" min="0" value="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemImage">Image</label>
+                    <div class="image-upload-container">
+                        <input type="file" id="itemImage" class="form-file" accept="image/*">
+                        <div class="image-preview" id="imagePreview">
+                            <i class="fa-solid fa-image"></i>
+                            <span>No image selected</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" class="form-textarea"></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-clear">Clear</button>
+                    <button type="submit" class="btn-submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add this to your items.html before the closing body tag -->
+<div id="addItemModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add New Item</h2>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="addItemForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="itemName">Item Name</label>
+                        <input type="text" id="itemName" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stocks">Stocks</label>
+                        <input type="number" id="stocks" class="form-input" min="0" value="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="unitPrice">Unit Price</label>
+                        <input type="number" id="unitPrice" class="form-input" min="0" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="discount">Discount (%)</label>
+                        <input type="number" id="discount" class="form-input" min="0" max="100" value="0">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status" class="form-select">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="discontinued">Discontinued</option>
+                    </select>
+                </div>
+                
+                <div class="form-row image-description-row">
+                    <div class="form-group image-group">
+                        <label for="itemImage">Image</label>
+                        <div class="image-upload-container">
+                            <input type="file" id="itemImage" class="form-file" accept="image/*">
+                            <div class="image-preview" id="imagePreview">
+                                <i class="fa-solid fa-image"></i>
+                                <span>No image selected</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" class="form-textarea"></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-clear">Clear</button>
+                    <button type="submit" class="btn-submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+    <script src="item.js?v=1.4"></script>
 </body>
 </html>
