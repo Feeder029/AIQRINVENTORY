@@ -3,6 +3,8 @@ from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 import mysql.connector 
 import synchronize
+from werkzeug.utils import secure_filename
+import os
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -195,10 +197,46 @@ def GetSales():
             cursor.close()
             conn.close()
 
-
-
-
-
+@app.route('/api/getsales', methods=['POST'])
+def InputItems():
+    if request.method == 'POST':
+        # Extract form data
+        item_name = request.form.get('itemName')
+        unit_price = request.form.get('unitPrice')
+        discount = request.form.get('discount')
+        status = request.form.get('status')
+        stocks = request.form.get('stocks')
+        description = request.form.get('description')
+        
+        # Handle image file if uploaded
+        image_file = request.files.get('image')
+        image_filename = None
+        
+        if image_file and image_file.filename:
+            # Get secure filename and save the file
+            image_filename = secure_filename(image_file.filename)
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+            image_file.save(image_path)
+        
+        # Create item dictionary
+        item_data = {
+            'item_name': item_name,
+            'unit_price': unit_price,
+            'discount': discount,
+            'status': status,
+            'stocks': stocks,
+            'description': description,
+            'image': image_filename
+        }
+        
+        print(item_data)
+        
+        # Here you would typically save this data to your database
+        # Example: db.items.insert_one(item_data)
+        
+        return jsonify({'success': True, 'message': 'Item added successfully'})
+    
+    return jsonify({'success': False, 'message': 'Invalid request method'})
 # Run the application
 if __name__ == '__main__':
     app.run(debug=True)

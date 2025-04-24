@@ -163,44 +163,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Form submission
-    addItemForm.addEventListener('submit', function(e) {
+// Form submission
+ addItemForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // Get form values
         const itemName = document.getElementById('itemName').value;
         const unitPrice = document.getElementById('unitPrice').value;
         const discount = document.getElementById('discount').value;
         const status = document.getElementById('status').value;
         const stocks = document.getElementById('stocks').value;
         const description = document.getElementById('description').value;
+
+
+
         
-        // Get image file (if any)
-        const imageFile = imageInput.files[0];
-        
-        // Create FormData object for file upload
-        const formData = new FormData();
-        formData.append('itemName', itemName);
-        formData.append('unitPrice', unitPrice);
-        formData.append('discount', discount);
-        formData.append('status', status);
-        formData.append('stocks', stocks);
-        formData.append('description', description);
-        
-        if (imageFile) {
-            formData.append('image', imageFile);
-        }
-        
-        // For now, just log the data and close the modal
-        console.log('Form submitted with data:', {
-            itemName,
-            unitPrice,
-            discount,
-            status,
-            stocks,
-            description,
-            image: imageFile ? imageFile.name : 'No image'
-        });
+        // submitFormData(formData)
         
         // Close modal after submission
         modal.classList.remove('show');
@@ -210,3 +187,29 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('Item added successfully! (Demo mode)');
     });
 });
+
+
+function submitFormData(formData) {
+    fetch('/api/getsales', {
+      method: 'POST',
+      body: formData  
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Success:', data);
+      // Handle successful response
+      if (data.success) {
+        alert(data.message); // Or update UI in a more elegant way
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      // Handle errors
+      alert('Failed to add item: ' + error.message);
+    });
+  }
