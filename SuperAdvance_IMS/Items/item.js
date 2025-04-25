@@ -80,8 +80,7 @@ function displayItems() {
                         </div>
                     `;
                     
-                    console.log("Item:", item.I_Name);
-                    console.log("Image path:", imagePath || "None");
+        
                 });
             } else {
                 console.log("No items found");

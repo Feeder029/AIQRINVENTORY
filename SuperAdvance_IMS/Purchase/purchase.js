@@ -58,8 +58,6 @@ function DisplayPurchases() {
                     </div>
                     `;
                     
-                    console.log("Purchase:", item.I_Name);
-                    console.log("Image path:", imagePath || "None");
                 });
             } else {
                 console.log("No Purchase found");
