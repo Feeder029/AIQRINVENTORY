@@ -9,28 +9,44 @@
     <title>PURCHASE</title>
 </head>
 <body>
-    <nav class="nav">
-        <div class="top-nav">
-            <h1>PURCHASE LISTS</h1>
-            <div class="nav-icons">
-                <button><i class='bx bx-printer'></i></button>
-                <button><i class="fa-regular fa-square-plus"></i></button>
-            </div>
-        </div>
-        <div class="search-container">
-            <button><i class="fa-solid fa-filter"></i></button>
-            <div class="search-bar">
-                <button><i class="fa-solid fa-magnifying-glass"></i></button>
-                <input type="search" name="" id="" placeholder="Search Purchase">
-            </div>
-        </div>
-    </nav>
+    <div class="container">
+        <header>
+            <div class="logo">PURCHASE LISTS</div>
+            <div class="header-actions">
+                <div class="header-actions">
+                    <button class="btn-secondary">
+                        <i class='bx bx-printer'></i>
+                        Print
+                    </button>
 
-    <div class="main-container">
-        <table id="PurchasesList">
+                    <button class="btn-primary">
+                        <i class="fa-regular fa-square-plus"></i>
+                        Add Purchase
+                    </button>
+                </div>
+            </div>            
+        </header>
+
+        <div class="main-container">
+            <div class="main-header">
+                <button><i class="fa-solid fa-filter"></i></button>
+                <div class="search-container">
+                    <span class="search-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </span>
+                    <input type="text" class="search-input" placeholder="Search Purchase...">
+                </div>
+        </div>
+
+        <table class="table" id="PurchasesList">
         </table>
+
     </div>
 
-    <script src="purchase.js"></script>
+
+    <script type="module" src="purchase.js"></script>
 </body>
 </html>

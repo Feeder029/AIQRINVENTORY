@@ -10,18 +10,27 @@ body {
     color: #333;
     line-height: 1.6;
     padding-left: 10px;
+    font-size: 15px;
+    font-weight: 400;
 }
 
 .container {
-    max-width: 100%;
     margin: 0 auto;
-    padding: 15px;
+    padding: 0 10px;
 }
 
 button {
-    border: none;
-    background-color: transparent;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: #000;
 }
 
 header {
@@ -49,7 +58,6 @@ header {
     color: #fff;
     padding: 10px 16px;
     border-radius: 8px;
-    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -63,16 +71,9 @@ header {
 }
 
 .btn-secondary {
-    background-color: #fff;
-    color: #000;
-    border: 1px solid #eaeaea;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s ease;
+    background-color:  #f9f9f9;
+    color: #111111;
+    border: #e2e2e2;
 }
 
 .btn-secondary:hover {
@@ -83,15 +84,15 @@ header {
 
 .items-header {
     display: flex;
+    justify-content: left;
     align-items: center;
     margin-bottom: 20px;
-    gap: 10px;
+    /* padding-left: 15px; */
 }
 
 .search-container {
+    /* padding-left: 10px; */
     position: relative;
-    margin-left: 10px;
-    flex-grow: 1;
 }
 
 .search-input {
@@ -99,8 +100,7 @@ header {
     border: 1px solid #eaeaea;
     border-radius: 8px;
     font-size: 14px;
-    width: 100%;
-    max-width: 500px;
+    width: 500px;
     background-color: #fff;
     transition: all 0.2s ease;
 }
@@ -117,6 +117,12 @@ header {
     top: 50%;
     transform: translateY(-50%);
     color: #666;
+}
+
+
+.items-container{
+    position: relative;
+    margin-bottom: 80px;
 }
 
 .main-container {
@@ -345,7 +351,7 @@ header {
 /* Modal styles */
 .modal {
     display: none;
-    position: fixed;
+    /* position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -353,9 +359,9 @@ header {
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 100;
     justify-content: center;
-    align-items: center;
+    align-items: center; */
 }
-
+/* 
 .modal.show {
     display: flex;
 }
@@ -452,9 +458,9 @@ label {
     font-size: 14px;
     font-weight: 500;
     color: #333;
-}
+} 
 
-.form-input, .form-select, .form-textarea {
+/* .form-input, .form-select, .form-textarea {
     width: 100%;
     padding: 12px;
     border: 1px solid #ddd;
@@ -550,223 +556,4 @@ label {
     background-color: #f5f5f5;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .form-row, .image-description-row {
-        flex-direction: column;
-        height: auto;
-    }
-    
-    .image-preview {
-        height: 200px;
-    }
-    
-    .form-textarea {
-        min-height: 120px;
-    }
-    
-    .image-group {
-        flex: 1;
-    }
-}
-
-@keyframes modalSlideIn {
-    from {
-        transform: translateY(-30px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-@media (max-width: 768px) {
-    .search-input {
-        max-width: 100%;
-    }
-    
-    .items-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
-    
-    .header-actions {
-        width: 100%;
-        justify-content: space-between;
-    }
-}
-
-/* Add these responsive enhancements to your existing CSS */
-
-/* Base responsive adjustments */
-@media (max-width: 1200px) {
-    .main-container {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    }
-}
-
-@media (max-width: 992px) {
-    .main-container {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    }
-    
-    .search-input {
-        width: 400px;
-    }
-}
-
-@media (max-width: 768px) {
-    header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-    
-    .header-actions {
-        width: 100%;
-        justify-content: flex-end;
-    }
-    
-    .main-container {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    }
-    
-    .items-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    
-    .search-container {
-        width: 100%;
-    }
-    
-    .search-input {
-        width: 100%;
-    }
-    
-    .item-image img {
-        height: 160px;
-        width: 160px;
-    }
-    
-    .item-container {
-        width: 100%;
-    }
-}
-
-@media (max-width: 576px) {
-    .container {
-        padding: 10px;
-    }
-    
-    .header-actions {
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    
-    .main-container {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 8px;
-    }
-    
-    .item-image img {
-        height: 140px;
-        width: 140px;
-    }
-    
-    button {
-        padding: 8px 12px;
-        font-size: 14px;
-    }
-    
-    .modal {
-        width: 95%;
-    }
-}
-
-@media (max-width: 480px) {
-    .logo {
-        font-size: 20px;
-    }
-    
-    .main-container {
-        grid-template-columns: 1fr 1fr;
-    }
-    
-    .item-image img {
-        height: auto;
-        width: 100%;
-    }
-    
-    .warning-details {
-        width: 160px;
-    }
-    
-    .dropdown-menu {
-        width: 120px;
-    }
-    
-    .modal-body {
-        padding: 15px;
-    }
-    
-    .modal-footer {
-        padding: 10px 15px;
-    }
-    
-    .btn-submit, .btn-clear {
-        padding: 6px 12px;
-        font-size: 14px;
-    }
-}
-
-@media (max-width: 360px) {
-    .main-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .item-container {
-        margin: 0 auto;
-    }
-    
-    .item-image img {
-        height: auto;
-        width: 100%;
-        max-width: 280px;
-    }
-}
-
-/* Fix for the modal on small screens */
-@media (max-height: 700px) {
-    .modal {
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-    
-    .form-textarea {
-        min-height: 60px;
-    }
-}
-
-/* Make sure form inputs are properly sized on mobile */
-@media (hover: none) and (pointer: coarse) {
-    .form-input, .form-select, .form-textarea {
-        font-size: 16px; /* Prevents iOS from zooming in on focus */
-        padding: 10px 12px;
-    }
-    
-    .btn-submit, .btn-clear {
-        min-height: 44px; /* Minimum touch target size */
-    }
-}
-
-/* Ensure the item container fits on small screens */
-.item-container {
-    max-width: 100%;
-}
-
+} */

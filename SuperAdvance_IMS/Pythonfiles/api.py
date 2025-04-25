@@ -34,7 +34,23 @@ def GetProducts():
 @app.route('/api/displaypurchases', methods=['GET'])
 def GetPurchase():
     synchronize.synchronize_purchase()
-    sql = "SELECT `purchaseID`,`I_Image`, `P_Date`, `P_Quantity`, `I_Name` FROM `purchaselist`"
+    sql = """
+    SELECT 
+    `purchaseID`, 
+    `I_Image`, 
+    `P_Date`,
+    `P_Quantity`, 
+    `I_Name`,
+    CASE 
+        WHEN DATEDIFF(CURDATE(), `P_Date`) = 0 THEN 'Today'
+        WHEN DATEDIFF(CURDATE(), `P_Date`) = 1 THEN '1 day ago'
+        WHEN DATEDIFF(CURDATE(), `P_Date`) > 1 AND DATEDIFF(CURDATE(), `P_Date`) <= 6 
+            THEN CONCAT(DATEDIFF(CURDATE(), `P_Date`), ' days ago')
+        ELSE DATE_FORMAT(`P_Date`, '%M %e, %Y')
+    END AS `Date`
+    FROM `purchaselist`
+    ORDER BY `P_Date` DESC
+    """
 
     return GET(sql,"purchases","I_Image")
 

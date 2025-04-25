@@ -1,37 +1,30 @@
+import { fetchData } from '../Function/getdata.js';
+
 function displaysales() {
-    // Track current page globally
+
     if (!window.currentPage) {
         window.currentPage = 1;
     }
-    
-    fetch("http://localhost:5000/api/displaysales")
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            if (data.sales && data.sales.length > 0) {
-                // Store sales data globally for pagination
-                window.salesData = data.sales;
-                renderSalesPage(window.currentPage);
-            } else {
-                console.log("No items found");
-                document.getElementById('salesinfo').innerHTML = "<p>No sales records found</p>";
-                document.getElementById('page-controls').innerHTML = "";
-            }
+
+    fetchData("displaysales",data=>{
+
+        if (data.sales && data.sales.length > 0) {
+            // Store sales data globally for pagination
+            window.salesData = data.sales;
+            renderSalesPage(window.currentPage);
         } else {
-            console.log("Access Denied:", data.message || "Unknown error");
-            document.getElementById('salesinfo').innerHTML = "<p>Error loading sales data</p>";
+            console.log("No items found");
+            document.getElementById('salesinfo').innerHTML = "<p>No sales records found</p>";
             document.getElementById('page-controls').innerHTML = "";
         }
+        
+
+
     })
-    .catch(error => {
-        console.error("Access Error:", error);
-        document.getElementById('salesinfo').innerHTML = "<p>Error connecting to server</p>";
-        document.getElementById('page-controls').innerHTML = "";
-    });
 }
 
 function renderSalesPage(page) {
-    const itemsPerPage = 8;
+    const itemsPerPage = 6;
     const sales = window.salesData;
     const totalPages = Math.ceil(sales.length / itemsPerPage);
     

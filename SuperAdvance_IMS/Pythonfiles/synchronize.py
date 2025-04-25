@@ -745,16 +745,6 @@ def update_sale(sale, ProductID, CustomerID, saleID):
     except mysql.connector.Error as err:
         print(f"Database Error: {err}")
 
-
-# @app.route('/sync', methods=['GET'])
-# def sync_route():
-#     """API endpoint to trigger synchronization"""
-#     try:
-#         synchronize_inventory()
-#         return jsonify({"status": "success", "message": "Inventory synchronized successfully"})
-#     except Exception as e:
-#         return jsonify({"status": "error", "message": str(e)}), 500
-
 if __name__ == "__main__":
     print("start")
 

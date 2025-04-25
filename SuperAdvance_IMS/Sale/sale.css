@@ -7,15 +7,15 @@
         }
         
         body {
+            padding-left: 10px;
             background-color: #f8f8f8;
             color: #333;
             line-height: 1.6;
         }
         
         .container {
-            max-width: 100%;
             margin: 0 auto;
-            padding: 15px;
+            padding: 0 10px;
         }
         
         header {
@@ -41,7 +41,7 @@
         button {
             padding: 10px 16px;
             border-radius: 8px;
-            font-weight: 800;
+            /* font-weight: 800; */
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
@@ -111,7 +111,7 @@
         }
         
         .sales-container {
-            margin-bottom: 30px;
+            margin-bottom: 80px;
         }
         
         .sales-header {
