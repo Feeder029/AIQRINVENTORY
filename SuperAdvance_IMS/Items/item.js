@@ -89,6 +89,46 @@ function displayItems() {
     })
 }
 
+window.SaveItems = SaveItems;
+
+function SaveItems(){
+
+    alert("Try");
+
+    const itemData = {
+        Name: document.getElementById('ProductName').value,
+        Desc: document.getElementById('Description').value,
+        Quantity: parseInt(document.getElementById('Quantity').value),
+        UnitPrice: parseFloat(document.getElementById('UnitPrice').value),
+        Discount: parseFloat(document.getElementById('Discount').value)
+    };
+
+
+    fetch("http://localhost:5000/api/insertitems",{
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(itemData)
+    })
+    .then(response => response.json())
+    .then(data=>{
+        if (data.status === "success") {
+            alert("Item saved successfully!");
+        } else {
+            alert("Failed to save item: " + data.message);
+        }
+    })
+    .catch(error => {
+        console.error("Access Error:", error);
+        if (handleError) {
+          handleError(error.message);
+        } else {
+        }
+    });
+}
+
+
 // Call the function to display items
 displayItems();
 

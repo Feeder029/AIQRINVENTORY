@@ -5,6 +5,8 @@ import mysql.connector
 import synchronize
 from werkzeug.utils import secure_filename
 import os
+import itemqr
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -15,6 +17,14 @@ def get_connection():
         user='root',
         password='',
         database='ai_inventory'
+    )
+
+def get_connection2():
+    return mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='',
+        database='shop_inventory'
     )
 
 # For the Display on Items
@@ -159,6 +169,76 @@ def GET(statement,dataname,Image=None):
         if 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
+
+@app.route('/api/insertitems', methods=['POST'])
+def AddItem():
+    try:
+        conn = get_connection()
+        conn2 = get_connection2()
+
+        cursor = conn.cursor(dictionary=True)
+        cursor2 = conn2.cursor(dictionary=True)
+
+        
+        data = request.json
+        ItemName = data.get("Name")
+        ItemDescription = data.get("Desc")
+        ItemQuantity = data.get("Quantity")
+        ItemUnitPrice = data.get("UnitPrice")
+        ItemDiscount = data.get("Discount")
+        I_Status = "Active"
+
+        qrpath, qrcode = itemqr.generate_qr(ItemName)
+
+        query = """
+        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, `I_QRPath`) 
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """
+
+        cursor.execute(query, (
+            ItemName, ItemDiscount, ItemUnitPrice, I_Status,
+            ItemQuantity, ItemDescription, qrcode, qrpath
+        ))
+
+        AID = cursor.lastrowid
+        ItemNumber= AID + 1000
+        Path = "null";
+
+        lquery = """
+        INSERT INTO `item`(`itemNumber`, `itemName`, `discount`, `stock`, `unitPrice`,`imageURL`,`status`, `description`)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """
+        cursor2.execute(lquery, (
+            ItemNumber, ItemName, ItemDiscount, ItemQuantity, ItemUnitPrice, Path, I_Status, ItemDescription
+        ))
+
+        LID = cursor2.lastrowid
+
+        update = """
+        UPDATE `item` SET `I_LegacyCode`= %s WHERE `ItemID`= %s      
+        """
+        cursor.execute(update, (
+            LID, AID
+        ))
+
+        conn.commit()
+
+        return jsonify({"status": "success", "message": "Item added successfully."})
+        
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+        return jsonify({"status": "error", "message": str(err)}), 500
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
+    
+
+
+
+
+
+
 
 
 @app.route('/api/getsales', methods=['POST'])
