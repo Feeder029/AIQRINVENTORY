@@ -7,33 +7,12 @@ function displayItems() {
 
         if(data.items && data.items.length > 0) {
             data.items.forEach(item => {
+
+                console.log("Data: " +item.I_ImagePath)
                 // Process the image path if it exists
-                let imagePath = "";
+                let imagePath = item.I_ImagePath;
                 
-                if(item.I_Image) {
-                    // Check if it's a URL or base64 data
-                    if(item.I_Image.startsWith('http') || item.I_Image.startsWith('/')) {
-                        // It's already a URL - use directly
-                        imagePath = item.I_Image;
-                    } else {
-                        // Try to decode it from bytes if it's not already a URL
-                        try {
-                            // Convert ASCII representation to actual string if needed
-                            if(item.I_Image.includes('http')) {
-                                // Extract the URL from the binary data
-                                const urlMatch = item.I_Image.match(/(http:\/\/[^\s]+)/);
-                                if(urlMatch && urlMatch[1]) {
-                                    imagePath = urlMatch[1];
-                                }
-                            } else {
-                                // Use as base64
-                                imagePath = `data:image/jpeg;base64,${item.I_Image}`;
-                            }
-                        } catch(e) {
-                            console.error("Error processing image data:", e);
-                        }
-                    }
-                }
+
                 
                 // Fall back to placeholder if no valid image path
                 const imageDisplay = imagePath ? 
@@ -91,43 +70,94 @@ function displayItems() {
 
 window.SaveItems = SaveItems;
 
-function SaveItems(){
-
-    alert("Try");
-
-    const itemData = {
-        Name: document.getElementById('ProductName').value,
-        Desc: document.getElementById('Description').value,
-        Quantity: parseInt(document.getElementById('Quantity').value),
-        UnitPrice: parseFloat(document.getElementById('UnitPrice').value),
-        Discount: parseFloat(document.getElementById('Discount').value)
-    };
-
-
-    fetch("http://localhost:5000/api/insertitems",{
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(itemData)
-    })
-    .then(response => response.json())
-    .then(data=>{
-        if (data.status === "success") {
-            alert("Item saved successfully!");
-        } else {
-            alert("Failed to save item: " + data.message);
-        }
-    })
-    .catch(error => {
-        console.error("Access Error:", error);
-        if (handleError) {
-          handleError(error.message);
-        } else {
-        }
-    });
+function SaveItems() {
+    // Get file input element
+    const fileInput = document.getElementById('Item-Img');
+    
+    // Check if a file was selected
+    if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+            // The base64 string represents the LONGBLOB data
+            const base64String = event.target.result;
+            
+            // Create the item data object with the base64 image data
+            const itemData = {
+                Name: document.getElementById('ProductName').value,
+                Desc: document.getElementById('Description').value,
+                Quantity: parseInt(document.getElementById('Quantity').value),
+                UnitPrice: parseFloat(document.getElementById('UnitPrice').value),
+                Discount: parseFloat(document.getElementById('Discount').value),
+                Img: base64String // This will be the LONGBLOB data as a base64 string
+            };
+            
+            // Ask for confirmation before submitting
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to save the item "${itemData.Name}"`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, save it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // User confirmed, proceed with saving
+                    fetch("http://localhost:5000/api/insertitems", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(itemData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            // Success message using SweetAlert
+                            Swal.fire(
+                                'Saved!',
+                                'Item has been saved successfully.',
+                                'success'
+                            );
+                            // Optionally refresh the items display
+                            displayItems();
+                        } else {
+                            // Error message using SweetAlert
+                            Swal.fire(
+                                'Error!',
+                                'Failed to save item: ' + data.message,
+                                'error'
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Access Error:", error);
+                        // Error message using SweetAlert
+                        Swal.fire(
+                            'Error!',
+                            'Error saving item: ' + error.message,
+                            'error'
+                        );
+                    });
+                }
+            });
+        };
+        
+        // Read the file as a Data URL (base64)
+        reader.readAsDataURL(file);
+    } else {
+        // No file selected - using SweetAlert
+        Swal.fire(
+            'Warning',
+            'Please select an image file',
+            'warning'
+        );
+    }
 }
-
+// Make sure the function is available globally
+window.SaveItems = SaveItems;
 
 // Call the function to display items
 displayItems();
@@ -225,11 +255,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const stocks = document.getElementById('stocks').value;
         const description = document.getElementById('description').value;
 
-
-
-        
-        // submitFormData(formData)
-        
         // Close modal after submission
         modal.classList.remove('show');
         clearForm();

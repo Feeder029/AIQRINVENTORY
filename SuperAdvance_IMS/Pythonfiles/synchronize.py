@@ -48,7 +48,7 @@ def add_item(item, qrpath, qrcode):
             query = """
                 INSERT INTO item (
                     I_LegacyCode, I_Name, I_Discount, I_UnitPrice, 
-                    I_Status, I_Stock, I_Description, `I_QRCode`, `I_QRPath`, `I_Image`
+                    I_Status, I_Stock, I_Description, `I_QRCode`, `I_QRPath`, `I_ImagePath`
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             

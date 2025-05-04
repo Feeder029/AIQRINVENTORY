@@ -6,6 +6,7 @@ import synchronize
 from werkzeug.utils import secure_filename
 import os
 import itemqr
+import base64
 
 
 app = Flask(__name__)
@@ -34,7 +35,7 @@ def GetProducts():
 
     sql = """
         SELECT `ItemID`, `I_LegacyCode`, `I_Name`, `I_Discount`, `I_UnitPrice`, 
-        `I_Image`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, 
+        `I_Image`,`I_ImagePath`,`I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, 
         `I_QRPath`, `I_LastUpdate`, `I_Suggestion`, `I_SuggestedPrice` FROM `item`
     """
     
@@ -179,66 +180,113 @@ def AddItem():
         cursor = conn.cursor(dictionary=True)
         cursor2 = conn2.cursor(dictionary=True)
 
-        
         data = request.json
         ItemName = data.get("Name")
         ItemDescription = data.get("Desc")
         ItemQuantity = data.get("Quantity")
         ItemUnitPrice = data.get("UnitPrice")
         ItemDiscount = data.get("Discount")
+        Image = data.get("Img")  # This should be base64 encoded image data
         I_Status = "Active"
 
+        # Generate QR code
         qrpath, qrcode = itemqr.generate_qr(ItemName)
 
+        # Save the image to a folder
+        if Image:
+            # Create uploads directory if it doesn't exist
+            upload_folder = "SuperAdvance_IMS/Images/data"
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            # Create a safe filename from ItemName
+            safe_item_name = ''.join(c if c.isalnum() or c in ['-', '_'] else '_' for c in ItemName)
+            filename = f"{safe_item_name}.png"
+            
+            # Full path to save the image
+            image_path = os.path.join(upload_folder, filename)
+            
+            # Decode base64 image and save it
+            try:
+                # Remove the base64 header if present
+                if "," in Image:
+                    Image = Image.split(",")[1]
+                
+                # Decode and save the image
+                with open(image_path, "wb") as img_file:
+                    img_file.write(base64.b64decode(Image))
+                
+                # Get relative path to store in database
+                relative_path = os.path.join("http://localhost/AIQRINVENTORY/SuperAdvance_IMS/Images/data/", filename)
+                print(f"Image saved at: {image_path}")
+            except Exception as img_err:
+                print(f"Error saving image: {img_err}")
+                relative_path = None
+        else:
+            relative_path = None
+            print("No image provided")
+
+        # First insert into ai_inventory database
         query = """
-        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, `I_QRPath`) 
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, `I_QRPath`, `I_ImagePath`, `I_Image`) 
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
 
         cursor.execute(query, (
             ItemName, ItemDiscount, ItemUnitPrice, I_Status,
-            ItemQuantity, ItemDescription, qrcode, qrpath
+            ItemQuantity, ItemDescription, qrcode, qrpath, relative_path, Image
         ))
 
         AID = cursor.lastrowid
-        ItemNumber= AID + 1000
-        Path = "null";
+        ItemNumber = AID + 1000
+        
+        # Use the saved image path for the second database too
+        Path = relative_path if relative_path else "null"
 
-        lquery = """
-        INSERT INTO `item`(`itemNumber`, `itemName`, `discount`, `stock`, `unitPrice`,`imageURL`,`status`, `description`)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-        """
-        cursor2.execute(lquery, (
-            ItemNumber, ItemName, ItemDiscount, ItemQuantity, ItemUnitPrice, Path, I_Status, ItemDescription
-        ))
-
-        LID = cursor2.lastrowid
-
-        update = """
-        UPDATE `item` SET `I_LegacyCode`= %s WHERE `ItemID`= %s      
-        """
-        cursor.execute(update, (
-            LID, AID
-        ))
-
-        conn.commit()
-
-        return jsonify({"status": "success", "message": "Item added successfully."})
+        # Try to insert into shop_inventory database
+        try:
+            lquery = """
+            INSERT INTO `item`(`itemNumber`, `itemName`, `discount`, `stock`, `unitPrice`,`imageURL`,`status`, `description`)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            """
+            cursor2.execute(lquery, (
+                ItemNumber, ItemName, ItemDiscount, ItemQuantity, ItemUnitPrice, Path, I_Status, ItemDescription
+            ))
+            
+            LID = cursor2.lastrowid
+            
+            # Update the first database with the legacy ID
+            update = """
+            UPDATE `item` SET `I_LegacyCode`= %s WHERE `ItemID`= %s      
+            """
+            cursor.execute(update, (
+                LID, AID
+            ))
+            
+            conn.commit()
+            conn2.commit()  # Make sure to commit the second connection too
+            
+            return jsonify({
+                "status": "success", 
+                "message": "Item added successfully to both databases.",
+                "image_path": relative_path
+            })
+            
+        except mysql.connector.Error as err2:
+            # If second insert fails, rollback first insert
+            conn.rollback()
+            print(f"Second Database Error: {err2}")
+            return jsonify({"status": "error", "message": f"First database insert succeeded, but second failed: {str(err2)}"}), 500
         
     except mysql.connector.Error as err:
-        print(f"Database Error: {err}")
+        print(f"First Database Error: {err}")
         return jsonify({"status": "error", "message": str(err)}), 500
     finally:
         if 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
-    
-
-
-
-
-
-
+        if 'conn2' in locals() and conn2.is_connected():
+            cursor2.close()
+            conn2.close()
 
 
 @app.route('/api/getsales', methods=['POST'])
