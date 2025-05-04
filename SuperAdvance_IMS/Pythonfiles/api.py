@@ -49,6 +49,7 @@ def GetPurchase():
     SELECT 
     `purchaseID`, 
     `I_Image`, 
+    `I_ImagePath`,
     `P_Date`,
     `P_Quantity`, 
     `I_Name`,
@@ -85,6 +86,9 @@ def GetSales():
 # For the Display on Customer
 @app.route('/api/displaycustomer', methods=['GET'])
 def GetCustomers():
+    synchronize.synchronize_customer()
+
+    
     sql = """
           SELECT `CustomerID`, `C_LFullName`,  `C_Email`, `C_Mobile`, `C_Mobile2`,`CA_Street`, `C_status` FROM `customerlist`  
          """
@@ -93,6 +97,7 @@ def GetCustomers():
 # For the Display on Vendors
 @app.route('/api/displayvendors', methods=['GET'])
 def GetVendors():
+    synchronize.synchronize_vendor()
     sql = """
           SELECT a.VendorID, a.V_LFullName, a.V_Email, a.V_Mobile, a.V_Mobile2, a.VA_Street, a.V_status FROM `vendorlist` a
          """
