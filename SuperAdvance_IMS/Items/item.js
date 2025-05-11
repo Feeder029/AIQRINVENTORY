@@ -69,6 +69,7 @@ function displayItems() {
 }
 
 window.SaveItems = SaveItems;
+window.Next = Next;
 
 function SaveItems() {
     // Get file input element
@@ -152,6 +153,155 @@ function SaveItems() {
         Swal.fire(
             'Warning',
             'Please select an image file',
+            'warning'
+        );
+    }
+}
+
+// Frontend JavaScript Fix
+function Next() {
+    document.getElementById("firstaddpage").style.display = "none";
+    document.getElementById("secondaddpage").style.display = "block";
+
+    // Create the item data object with proper property names
+    const itemData = {
+        itemName: document.getElementById('ProductName').value, // Match this with backend parameter name
+        itemDesc: document.getElementById('Description').value
+    };    
+
+    fetch("http://localhost:5000/api/getrecommendedprice", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(itemData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) { 
+            console.log("Price data received:", data);
+            
+            let display = `
+            <div class="price-analysis-container">
+                <div class="price-summary-section">
+                    <h2>Price Analysis for ${itemData.itemName}</h2>
+                    <div class="price-highlight">
+                        <span class="label">Suggested Price:</span>
+                        <span class="value">$${data.suggestedPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="price-details">
+                        <div class="detail-item">
+                            <span class="label">Price Range:</span>
+                            <span class="value">$${data.priceRange.min.toFixed(2)} - $${data.priceRange.max.toFixed(2)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Confidence:</span>
+                            <span class="value">${data.confidence}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Total Prices Found:</span>
+                            <span class="value">${data.totalPricesFound}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detailed-results-section">
+                    <h3>Detailed Results by Source</h3>`;
+            
+            // Add detailed results for each source
+            for (const [source, sourceData] of Object.entries(data.detailedResults)) {
+                display += `
+                    <div class="source-box">
+                        <h4>${source.toUpperCase()} (${sourceData.count} prices)</h4>
+                        <div class="source-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Price Range:</span>
+                                <span class="detail-value">$${sourceData.price_range.min.toFixed(2)} - $${sourceData.price_range.max.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Average Price:</span>
+                                <span class="detail-value">$${sourceData.avg_price.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Median Price:</span>
+                                <span class="detail-value">$${sourceData.median_price.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Standard Deviation:</span>
+                                <span class="detail-value">$${sourceData.std_deviation.toFixed(2)}</span>
+                            </div>
+                            <div class="prices-list">
+                                <span class="detail-label">Individual Prices:</span>
+                                <div class="price-chips">
+                                    ${sourceData.prices.map(price => `<span class="price-chip">$${price.toFixed(2)}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            
+            display += `
+                </div>
+                <div class="action-buttons">
+                    <button onclick="acceptSuggestedPrice(${data.suggestedPrice})" class="accept-button">Accept Suggested Price</button>
+                </div>
+            </div>`;
+
+            document.getElementById('pricesuggestion').innerHTML = display;
+        } else {
+            // Error message using SweetAlert
+            Swal.fire(
+                'Error!',
+                'Failed to get price: ' + data.message,
+                'error'
+            );
+        }
+    })
+    .catch(error => {
+        console.error("Access Error:", error);
+        // Error message using SweetAlert
+        Swal.fire(
+            'Error!',
+            'Error getting price: ' + error.message,
+            'error'
+        );
+    });
+}
+
+// Helper functions for the price actions
+function acceptSuggestedPrice(price) {
+    document.getElementById('ItemPrice').value = price.toFixed(2);
+    // Add any additional logic needed when accepting the suggested price
+    Swal.fire(
+        'Price Set!',
+        `The suggested price of $${price.toFixed(2)} has been set for your item.`,
+        'success'
+    );
+}
+
+function showCustomPriceInput() {
+    document.getElementById('custom-price-input').style.display = 'block';
+}
+
+function setCustomPrice() {
+    const customPrice = document.getElementById('customPrice').value;
+    if (customPrice && !isNaN(customPrice) && parseFloat(customPrice) >= 0) {
+        document.getElementById('ItemPrice').value = parseFloat(customPrice).toFixed(2);
+        Swal.fire(
+            'Price Set!',
+            `Your custom price of $${parseFloat(customPrice).toFixed(2)} has been set for the item.`,
+            'success'
+        );
+        document.getElementById('custom-price-input').style.display = 'none';
+    } else {
+        Swal.fire(
+            'Invalid Price',
+            'Please enter a valid price.',
             'warning'
         );
     }

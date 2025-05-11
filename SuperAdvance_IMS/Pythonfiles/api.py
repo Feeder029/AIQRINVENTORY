@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 import os
 import itemqr
 import base64
-
+import ai
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -293,7 +293,6 @@ def AddItem():
             cursor2.close()
             conn2.close()
 
-
 @app.route('/api/getsales', methods=['POST'])
 def InputItems():
     if request.method == 'POST':
@@ -335,7 +334,51 @@ def InputItems():
     
     return jsonify({'success': False, 'message': 'Invalid request method'})
 
-
+@app.route('/api/getrecommendedprice', methods=['POST'])
+def GetPrice():
+    print("working")
+    
+    # Get JSON data instead of form data
+    data = request.get_json()
+    
+    if not data or 'itemName' not in data:
+        return jsonify({'success': False, 'message': 'Item name is required'})
+        
+    item_name = data['itemName']
+    
+    try:
+        # Get the complete results
+        results = ai.scrapeprice(item_name)
+        
+        # Format the detailed results for response
+        formatted_detailed = {}
+        for source, data in results["detailed"].items():
+            formatted_detailed[source] = {
+                "count": data["count"],
+                "price_range": {
+                    "min": data["min_price"],
+                    "max": data["max_price"]
+                },
+                "avg_price": data["avg_price"],
+                "median_price": data["median_price"],
+                "std_deviation": data["std_deviation"],
+                "prices": data["prices"]
+            }
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Item price analysis completed',
+            'suggestedPrice': results["summary"]["suggested_price"],
+            'priceRange': {
+                'min': results["summary"]["price_range"]["min"],
+                'max': results["summary"]["price_range"]["max"]
+            },
+            'confidence': results["summary"]["confidence"],
+            'totalPricesFound': results["summary"]["total_prices_found"],
+            'detailedResults': formatted_detailed
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
 # Run the application
 if __name__ == '__main__':
