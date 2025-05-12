@@ -10,6 +10,7 @@ import logging
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import matplotlib.pyplot as plt
+import hashlib
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -30,6 +31,8 @@ class PriceScraper:
         }
         self.stats = {}
         self.source_stats = {}
+        self.source_suggested_prices = {}  # New dictionary to store per-source suggested prices
+        self.price_history = {}  # For tracking previous searches
         
     def get_random_headers(self):
         """Generate random headers to avoid detection"""
@@ -267,9 +270,43 @@ class PriceScraper:
         except Exception as e:
             logger.error(f"Error scraping B&H Photo Video: {e}")
     
+    def _get_product_hash(self, product_name):
+        """Generate a consistent hash for the product name to use as identifier"""
+        return hashlib.md5(product_name.lower().strip().encode()).hexdigest()
+    
+    def _check_price_history(self, product_name):
+        """Check if we have cached results for this product"""
+        product_id = self._get_product_hash(product_name)
+        # Try to load from file if it exists
+        try:
+            with open(f"{product_id}_cache.json", "r") as f:
+                cache_data = json.load(f)
+                logger.info(f"Loaded cached data for {product_name}")
+                return cache_data
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
+    
+    def _save_price_history(self, product_name, results):
+        """Save the current price data to cache"""
+        product_id = self._get_product_hash(product_name)
+        try:
+            # Add timestamp
+            results["timestamp"] = time.time()
+            with open(f"{product_id}_cache.json", "w") as f:
+                json.dump(results, f)
+            logger.info(f"Saved results to cache for {product_name}")
+        except Exception as e:
+            logger.error(f"Failed to save cache: {e}")
+    
     def scrape_all(self, product_name):
         """Scrape prices from all sources in parallel"""
         logger.info(f"Starting price scraping for: {product_name}")
+        
+        # Check cache first - if recent results exist (< 24h), use them
+        cached_data = self._check_price_history(product_name)
+        if cached_data and (time.time() - cached_data.get("timestamp", 0)) < 86400:
+            logger.info(f"Using cached data for {product_name}")
+            return cached_data
         
         # Define scraping functions to run
         scrape_functions = [
@@ -297,10 +334,18 @@ class PriceScraper:
         # Calculate statistics
         self.calculate_stats()
         
-        return {
+        # Calculate per-source suggested prices
+        self.calculate_per_source_suggested_prices()
+        
+        results = {
             "summary": self.get_suggested_price(),
             "detailed": self.get_detailed_results()
         }
+        
+        # Save results to cache
+        self._save_price_history(product_name, results)
+        
+        return results
     
     def calculate_stats(self):
         """Calculate statistics for the scraped prices"""
@@ -345,6 +390,37 @@ class PriceScraper:
                 else:
                     self.source_stats[source]['std_dev'] = 0
     
+    def calculate_per_source_suggested_prices(self):
+        """Calculate suggested price for each source"""
+        for source, prices in self.prices.items():
+            if not prices:
+                continue
+                
+            # Use at least 3 prices for filtering outliers
+            if len(prices) >= 3:
+                filtered_prices = self.filter_outliers(prices)
+                if not filtered_prices:  # If all filtered out
+                    filtered_prices = prices
+            else:
+                filtered_prices = prices
+                
+            # Calculate suggested price
+            if len(filtered_prices) == 1:
+                # If only one price, use it
+                suggested_price = filtered_prices[0]
+            else:
+                # Weight factors - favor median for consistency, add some average to smooth
+                median_weight = 0.7
+                mean_weight = 0.3
+                
+                median_price = statistics.median(filtered_prices)
+                mean_price = statistics.mean(filtered_prices)
+                
+                suggested_price = (median_price * median_weight) + (mean_price * mean_weight)
+                
+            # Add to source suggested prices dict
+            self.source_suggested_prices[source] = round(suggested_price, 2)
+    
     def filter_outliers(self, prices):
         """Filter out price outliers using IQR method"""
         if len(prices) < 4:  # Need enough data for quartiles
@@ -358,6 +434,27 @@ class PriceScraper:
         upper_bound = q3 + (1.5 * iqr)
         
         return [price for price in prices if lower_bound <= price <= upper_bound]
+    
+    def get_price_range_suggestion(self, min_price, max_price, suggested_price):
+        """Calculate price range suggestions based on market segments"""
+        # Determine price ranges for different market segments
+        budget_max = min_price + (suggested_price - min_price) * 0.7
+        premium_min = max_price - (max_price - suggested_price) * 0.7
+        
+        return {
+            "budget": {
+                "min": round(min_price, 2),
+                "max": round(budget_max, 2)
+            },
+            "midrange": {
+                "min": round(budget_max, 2),
+                "max": round(premium_min, 2)
+            },
+            "premium": {
+                "min": round(premium_min, 2),
+                "max": round(max_price, 2)
+            }
+        }
     
     def get_suggested_price(self):
         """Calculate a weighted suggested price"""
@@ -406,16 +503,25 @@ class PriceScraper:
         # Round to 2 decimal places
         suggested_price = round(suggested_price, 2)
         
+        # Get min and max prices after filtering outliers
+        min_price = min(filtered_prices)
+        max_price = max(filtered_prices)
+        
+        # Calculate price range suggestions
+        price_ranges = self.get_price_range_suggestion(min_price, max_price, suggested_price)
+        
         # Create summary dictionary
         summary = {
             "suggested_price": suggested_price,
             "total_prices_found": len(all_prices),
             "prices_after_filtering": len(filtered_prices),
             "price_range": {
-                "min": min(filtered_prices),
-                "max": max(filtered_prices)
+                "min": min_price,
+                "max": max_price
             },
+            "suggested_ranges": price_ranges,
             "source_counts": {source: len(prices) for source, prices in self.prices.items() if prices},
+            "source_suggested_prices": self.source_suggested_prices,  # Include per-source price suggestions
             "confidence": self._calculate_confidence()
         }
         
@@ -436,6 +542,7 @@ class PriceScraper:
                     "avg_price": round(stats['mean'], 2),
                     "median_price": round(stats['median'], 2),
                     "std_deviation": round(stats['std_dev'], 2),
+                    "suggested_price": self.source_suggested_prices.get(source, 0),  # Add suggested price for source
                     "prices": [round(price, 2) for price in self.prices[source]]
                 }
         
@@ -462,7 +569,49 @@ class PriceScraper:
 
 def main():
     product_name = input("Enter the product name to search for: ")
-    scrapeprice(product_name)
+    results = scrapeprice(product_name)
+    
+    # Visualize price distribution if matplotlib is available
+    try:
+        plt.figure(figsize=(10, 6))
+        all_prices = []
+        for source, data in results["detailed"].items():
+            all_prices.extend(data["prices"])
+        
+        plt.hist(all_prices, bins=15, alpha=0.7)
+        plt.axvline(results["summary"]["suggested_price"], color='r', linestyle='dashed', linewidth=2)
+        plt.title(f"Price Distribution for {product_name}")
+        plt.xlabel("Price ($)")
+        plt.ylabel("Frequency")
+        plt.grid(True, alpha=0.3)
+        plt.savefig(f"{product_name.replace(' ', '_')}_price_distribution.png")
+        print(f"\nPrice distribution chart saved as '{product_name.replace(' ', '_')}_price_distribution.png'")
+        
+        # Create per-source price comparison chart
+        if results["summary"].get("source_suggested_prices"):
+            plt.figure(figsize=(12, 6))
+            sources = list(results["summary"]["source_suggested_prices"].keys())
+            prices = list(results["summary"]["source_suggested_prices"].values())
+            
+            # Sort by price for better visualization
+            sorted_data = sorted(zip(sources, prices), key=lambda x: x[1])
+            sources = [x[0] for x in sorted_data]
+            prices = [x[1] for x in sorted_data]
+            
+            plt.bar(sources, prices, color='skyblue')
+            plt.axhline(results["summary"]["suggested_price"], color='r', linestyle='dashed', linewidth=2, 
+                        label=f"Overall Suggested: ${results['summary']['suggested_price']}")
+            
+            plt.title(f"Suggested Price by Source for {product_name}")
+            plt.xlabel("Source")
+            plt.ylabel("Suggested Price ($)")
+            plt.xticks(rotation=45)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(f"{product_name.replace(' ', '_')}_source_price_comparison.png")
+            print(f"Source price comparison chart saved as '{product_name.replace(' ', '_')}_source_price_comparison.png'")
+    except Exception as e:
+        logger.warning(f"Could not generate price visualization: {e}")
 
 def scrapeprice(product_name):
     scraper = PriceScraper()
@@ -478,17 +627,32 @@ def scrapeprice(product_name):
     print(f"Price Range: ${summary['price_range']['min']} - ${summary['price_range']['max']}")
     print(f"Total Prices Found: {summary['total_prices_found']}")
     
+    # Display suggested prices by source
+    if "source_suggested_prices" in summary:
+        print("\n===== SUGGESTED PRICES BY SOURCE =====")
+        for source, price in summary["source_suggested_prices"].items():
+            print(f"{source.upper()}: ${price}")
+    
+    # Display price range suggestions
+    if "suggested_ranges" in summary:
+        print("\n===== PRICE RANGE SUGGESTIONS =====")
+        ranges = summary["suggested_ranges"]
+        print(f"Budget Range: ${ranges['budget']['min']} - ${ranges['budget']['max']}")
+        print(f"Mid-Range: ${ranges['midrange']['min']} - ${ranges['midrange']['max']}")
+        print(f"Premium Range: ${ranges['premium']['min']} - ${ranges['premium']['max']}")
+    
     # Display detailed results by source
     print("\n===== DETAILED RESULTS BY SOURCE =====")
     for source, data in detailed.items():
         print(f"\n{source.upper()} (Count: {data['count']})")
+        print(f"  Suggested Price: ${data['suggested_price']}")
         print(f"  Price Range: ${data['min_price']} - ${data['max_price']}")
         print(f"  Average Price: ${data['avg_price']}")
         print(f"  Median Price: ${data['median_price']}")
         print(f"  Standard Deviation: ${data['std_deviation']}")
         print(f"  Individual Prices: {', '.join(['$' + str(p) for p in data['prices']])}")
     
-    # Return all the results instead of just the suggested price
+    # Return all the results
     return {
         "summary": summary,
         "detailed": detailed

@@ -347,38 +347,66 @@ def GetPrice():
     item_name = data['itemName']
     
     try:
-        # Get the complete results
-        results = ai.scrapeprice(item_name)
-        
-        # Format the detailed results for response
-        formatted_detailed = {}
-        for source, data in results["detailed"].items():
-            formatted_detailed[source] = {
-                "count": data["count"],
-                "price_range": {
-                    "min": data["min_price"],
-                    "max": data["max_price"]
-                },
-                "avg_price": data["avg_price"],
-                "median_price": data["median_price"],
-                "std_deviation": data["std_deviation"],
-                "prices": data["prices"]
-            }
-        
-        return jsonify({
-            'success': True, 
-            'message': 'Item price analysis completed',
-            'suggestedPrice': results["summary"]["suggested_price"],
-            'priceRange': {
-                'min': results["summary"]["price_range"]["min"],
-                'max': results["summary"]["price_range"]["max"]
-            },
-            'confidence': results["summary"]["confidence"],
-            'totalPricesFound': results["summary"]["total_prices_found"],
-            'detailedResults': formatted_detailed
-        })
+     # Get the complete results
+     results = ai.scrapeprice(item_name)
+    
+     # Format the detailed results for response
+     formatted_detailed = {}
+     for source, data in results["detailed"].items():
+         formatted_detailed[source] = {
+             "count": data["count"],
+             "SuggestedPrice": data["suggested_price"],
+             "price_range": {
+                 "min": data["min_price"],
+                 "max": data["max_price"]
+             },
+             "avg_price": data["avg_price"],
+             "median_price": data["median_price"],
+             "std_deviation": data["std_deviation"],
+             "prices": data["prices"]
+         }
+    
+     # Prepare the response with all available information
+     response_data = {
+         'success': True, 
+         'message': 'Item price analysis completed',
+         'suggestedPrice': results["summary"]["suggested_price"],
+         'priceRange': {
+             'min': results["summary"]["price_range"]["min"],
+             'max': results["summary"]["price_range"]["max"]
+         },
+         'confidence': results["summary"]["confidence"],
+         'totalPricesFound': results["summary"]["total_prices_found"],
+         'pricesAfterFiltering': results["summary"]["prices_after_filtering"],
+         'detailedResults': formatted_detailed,
+         'sourceCounts': results["summary"]["source_counts"]
+      }
+    
+     # Add price range suggestions if available
+     if "suggested_ranges" in results["summary"]:
+         response_data['suggestedRanges'] = {
+             'budget': {
+                 'min': results["summary"]["suggested_ranges"]["budget"]["min"],
+                 'max': results["summary"]["suggested_ranges"]["budget"]["max"]
+             },
+             'midrange': {
+                 'min': results["summary"]["suggested_ranges"]["midrange"]["min"],
+                 'max': results["summary"]["suggested_ranges"]["midrange"]["max"]
+             },
+             'premium': {
+                 'min': results["summary"]["suggested_ranges"]["premium"]["min"],
+                 'max': results["summary"]["suggested_ranges"]["premium"]["max"]
+             }
+         }
+    
+     # Return the complete response
+     return jsonify(response_data)
+    
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    # Log the exception for debugging
+     logging.error(f"Error in price analysis: {str(e)}", exc_info=True)
+    
+    return jsonify({'success': False, 'message': str(e)})
 
 # Run the application
 if __name__ == '__main__':

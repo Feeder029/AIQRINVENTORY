@@ -93,6 +93,10 @@ function SaveItems() {
                 Discount: parseFloat(document.getElementById('Discount').value),
                 Img: base64String // This will be the LONGBLOB data as a base64 string
             };
+
+            
+            document.getElementById("secondaddpage").style.display = "none";
+
             
             // Ask for confirmation before submitting
             Swal.fire({
@@ -115,6 +119,7 @@ function SaveItems() {
                     })
                     .then(response => response.json())
                     .then(data => {
+
                         if (data.status === "success") {
                             // Success message using SweetAlert
                             Swal.fire(
@@ -142,6 +147,10 @@ function SaveItems() {
                             'error'
                         );
                     });
+
+                document.getElementById("firstaddpage").style.display = "block";
+                } else {
+                document.getElementById("secondaddpage").style.display = "block";                  
                 }
             });
         };
@@ -197,8 +206,8 @@ function Next() {
                     </div>
                     <div class="price-details">
                         <div class="detail-item">
-                            <span class="label">Price Range:</span>
-                            <span class="value">$${data.priceRange.min.toFixed(2)} - $${data.priceRange.max.toFixed(2)}</span>
+                            <span class="label">Mid Range Price Range:</span>
+                            <span class="value">$${data.suggestedRanges.midrange.min.toFixed(2)} - $${data.suggestedRanges.midrange.max.toFixed(2)}</span>
                         </div>
                         <div class="detail-item">
                             <span class="label">Confidence:</span>
@@ -226,9 +235,9 @@ function Next() {
                                 </div>
                             </div>
                             <div class="source-summary">
-                                <h4>${source.toUpperCase()}</h4>
-                                <div class="price-value">$${sourceData.median_price.toFixed(2)}</div>
-                                <div class="price-type">MEDIAN PRICE</div>
+                                <h4>${source.toUpperCase()} (${sourceData.count} Items)</h4>
+                                <div class="price-value">$${sourceData.SuggestedPrice.toFixed(2)}</div>
+                                <div class="price-type">SUGGESTED PRICE</div>
                             </div>
                             <div class="dropdown-arrow">
                                 <i class="arrow-down" id="${sourceId}-arrow"></i>
@@ -260,7 +269,7 @@ function Next() {
                                 </div>
                             </div>
                             <div class="source-actions">
-                                <button onclick="acceptSourcePrice('${source}', ${sourceData.median_price})" class="accept-source-button">Accept This Price</button>
+                                <button onclick="suggestedprice(${sourceData.SuggestedPrice.toFixed(2)})" class="accept-source-button">Accept This Price</button>
                             </div>
                         </div>
                     </div>`;
@@ -269,273 +278,17 @@ function Next() {
             display += `
                 </div>
                 <div class="action-buttons">
-                    <button onclick="acceptSuggestedPrice(${data.suggestedPrice})" class="accept-button">Accept Suggested Price</button>
+                    <button onclick="suggestedprice(${data.suggestedPrice.toFixed(2)})" class="accept-button">Accept Suggested Price</button>
                 </div>
             </div>`;
 
-            // Add CSS styles for the dropdown functionality
-            const styleElement = document.createElement('style');
-            styleElement.textContent = `
-                /* General Styles */
-                .price-analysis-container {
-                    font-family: Arial, sans-serif;
-                    max-width: 800px;
-                    margin: 0 auto;
-                }
-                
-                /* Source Dropdown Styles */
-                .source-dropdown {
-                    margin-bottom: 15px;
-                    border-radius: 8px;
-                    overflow: hidden;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                }
-                
-                .source-header {
-                    background-color: #3a3b3f;
-                    color: white;
-                    display: flex;
-                    align-items: center;
-                    padding: 15px;
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                }
-                
-                .source-header:hover {
-                    background-color: #4a4b50;
-                }
-                
-                .source-logo {
-                    margin-right: 15px;
-                    flex-shrink: 0;
-                }
-                
-                .logo-container {
-                    background-color: white;
-                    width: 70px;
-                    height: 70px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .logo-text {
-                    color: black;
-                    font-weight: bold;
-                    font-size: 12px;
-                    line-height: 1.2;
-                }
-                
-                .source-summary {
-                    flex-grow: 1;
-                }
-                
-                .source-summary h4 {
-                    margin: 0 0 5px 0;
-                    font-size: 18px;
-                    font-weight: lighter;
-                    color: #c0c0c0;
-                }
-                
-                .price-value {
-                    font-size: 32px;
-                    font-weight: bold;
-                    color: #4d8eff;
-                }
-                
-                .price-type {
-                    font-size: 14px;
-                    color: #c0c0c0;
-                }
-                
-                .dropdown-arrow {
-                    margin-left: 15px;
-                }
-                
-                .arrow-down {
-                    border: solid white;
-                    border-width: 0 3px 3px 0;
-                    display: inline-block;
-                    padding: 5px;
-                    transform: rotate(45deg);
-                    transition: transform 0.3s;
-                }
-                
-                .arrow-up {
-                    transform: rotate(-135deg);
-                }
-                
-                /* Details Section */
-                .source-details {
-                    background-color: #f5f5f5;
-                    padding: 20px;
-                    border-top: 1px solid #ddd;
-                }
-                
-                .details-grid {
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 15px;
-                    margin-bottom: 20px;
-                }
-                
-                .detail-card {
-                    background-color: white;
-                    padding: 12px;
-                    border-radius: 5px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                }
-                
-                .detail-title {
-                    color: #666;
-                    font-size: 14px;
-                    margin-bottom: 5px;
-                }
-                
-                .detail-value {
-                    font-weight: bold;
-                    font-size: 16px;
-                }
-                
-                .individual-prices {
-                    background-color: white;
-                    padding: 15px;
-                    border-radius: 5px;
-                    margin-bottom: 15px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                }
-                
-                .prices-title {
-                    color: #666;
-                    margin-bottom: 10px;
-                }
-                
-                .price-chips {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 8px;
-                }
-                
-                .price-chip {
-                    background-color: #e6f0ff;
-                    color: #0055cc;
-                    padding: 5px 10px;
-                    border-radius: 15px;
-                    font-size: 14px;
-                }
-                
-                .source-actions {
-                    margin-top: 15px;
-                }
-                
-                .accept-source-button {
-                    background-color: #2563eb;
-                    color: white;
-                    border: none;
-                    padding: 10px 15px;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    width: 100%;
-                    font-size: 16px;
-                    transition: background-color 0.2s;
-                }
-                
-                .accept-source-button:hover {
-                    background-color: #1d4ed8;
-                }
-                
-                /* Summary Styles */
-                .price-summary-section {
-                    margin-bottom: 25px;
-                }
-                
-                .price-highlight {
-                    background-color: #e6f0ff;
-                    padding: 15px;
-                    border-radius: 8px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin: 15px 0;
-                }
-                
-                .price-highlight .label {
-                    font-weight: bold;
-                    color: #444;
-                }
-                
-                .price-highlight .value {
-                    font-size: 24px;
-                    font-weight: bold;
-                    color: #0055cc;
-                }
-                
-                .price-details {
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 15px;
-                }
-                
-                .detail-item {
-                    background-color: white;
-                    padding: 12px;
-                    border-radius: 5px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                }
-                
-                .detail-item .label {
-                    color: #666;
-                    display: block;
-                    margin-bottom: 5px;
-                }
-                
-                .detail-item .value {
-                    font-weight: bold;
-                }
-                
-                .action-buttons {
-                    margin-top: 20px;
-                    text-align: center;
-                }
-                
-                .accept-button {
-                    background-color: #16a34a;
-                    color: white;
-                    border: none;
-                    padding: 12px 20px;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-size: 16px;
-                    transition: background-color 0.2s;
-                }
-                
-                .accept-button:hover {
-                    background-color: #15803d;
-                }
-                
-                /* Mobile Responsiveness */
-                @media (max-width: 600px) {
-                    .price-details {
-                        grid-template-columns: 1fr;
-                    }
-                    
-                    .details-grid {
-                        grid-template-columns: 1fr;
-                    }
-                    
-                    .source-header {
-                        flex-wrap: wrap;
-                    }
-                    
-                    .source-logo {
-                        margin-bottom: 10px;
-                    }
-                }
-            `;
-            document.head.appendChild(styleElement);
-
             document.getElementById('pricesuggestion').innerHTML = display;
+
+
+              document.getElementById("UnitPrice").addEventListener("input", function() {
+               pricecomparison(this.value,data.suggestedRanges.midrange.min.toFixed(2),data.suggestedRanges.midrange.max.toFixed(2));
+              });
+
             
             // Add the toggle function to the global scope
             window.toggleSourceDetails = function(sourceId) {
@@ -549,12 +302,6 @@ function Next() {
                     detailsElement.style.display = 'none';
                     arrowElement.classList.remove('arrow-up');
                 }
-            };
-            
-            // Add the accept source price function
-            window.acceptSourcePrice = function(source, price) {
-                console.log(`Accepting price from ${source}: $${price}`);
-                acceptSuggestedPrice(price);
             };
             
         } else {
@@ -577,6 +324,24 @@ function Next() {
     });
 }
 
+function pricecomparison(value,min,max){
+    
+    if(value>max){
+        document.querySelector(".alert").textContent = "This is too high!";
+    } else if (value<min){
+        document.querySelector(".alert").textContent = "This is too low!";
+    } else {
+       document.querySelector(".alert").textContent = "Fine!";
+    }
+
+}
+window.suggestedprice = suggestedprice
+window.pricecomparison = pricecomparison
+
+function suggestedprice(price){
+    document.getElementById("UnitPrice").value = price;
+}
+
 // Helper function to format source name for logo display
 function formatLogoText(source) {
     const name = source.toUpperCase();
@@ -592,39 +357,8 @@ function formatLogoText(source) {
     return `${firstHalf}<br>${secondHalf}`;
 }
 
-// Helper functions for the price actions
-function acceptSuggestedPrice(price) {
-    document.getElementById('ItemPrice').value = price.toFixed(2);
-    // Add any additional logic needed when accepting the suggested price
-    Swal.fire(
-        'Price Set!',
-        `The suggested price of $${price.toFixed(2)} has been set for your item.`,
-        'success'
-    );
-}
 
-function showCustomPriceInput() {
-    document.getElementById('custom-price-input').style.display = 'block';
-}
 
-function setCustomPrice() {
-    const customPrice = document.getElementById('customPrice').value;
-    if (customPrice && !isNaN(customPrice) && parseFloat(customPrice) >= 0) {
-        document.getElementById('ItemPrice').value = parseFloat(customPrice).toFixed(2);
-        Swal.fire(
-            'Price Set!',
-            `Your custom price of $${parseFloat(customPrice).toFixed(2)} has been set for the item.`,
-            'success'
-        );
-        document.getElementById('custom-price-input').style.display = 'none';
-    } else {
-        Swal.fire(
-            'Invalid Price',
-            'Please enter a valid price.',
-            'warning'
-        );
-    }
-}
 // Make sure the function is available globally
 window.SaveItems = SaveItems;
 
@@ -634,7 +368,28 @@ displayItems();
 
 
 
+// function showCustomPriceInput() {
+//     document.getElementById('custom-price-input').style.display = 'block';
+// }
 
+// function setCustomPrice() {
+//     const customPrice = document.getElementById('customPrice').value;
+//     if (customPrice && !isNaN(customPrice) && parseFloat(customPrice) >= 0) {
+//         document.getElementById('ItemPrice').value = parseFloat(customPrice).toFixed(2);
+//         Swal.fire(
+//             'Price Set!',
+//             `Your custom price of $${parseFloat(customPrice).toFixed(2)} has been set for the item.`,
+//             'success'
+//         );
+//         document.getElementById('custom-price-input').style.display = 'none';
+//     } else {
+//         Swal.fire(
+//             'Invalid Price',
+//             'Please enter a valid price.',
+//             'warning'
+//         );
+//     }
+// }
 
 
 
