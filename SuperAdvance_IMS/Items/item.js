@@ -186,6 +186,7 @@ function Next() {
         if (data.success) { 
             console.log("Price data received:", data);
             
+            // Create the summary section
             let display = `
             <div class="price-analysis-container">
                 <div class="price-summary-section">
@@ -213,33 +214,53 @@ function Next() {
                 <div class="detailed-results-section">
                     <h3>Detailed Results by Source</h3>`;
             
-            // Add detailed results for each source
+            // Add detailed results for each source with dropdown functionality
             for (const [source, sourceData] of Object.entries(data.detailedResults)) {
+                const sourceId = `source-${source.replace(/[^a-z0-9]/gi, '')}`;
                 display += `
-                    <div class="source-box">
-                        <h4>${source.toUpperCase()} (${sourceData.count} prices)</h4>
-                        <div class="source-details">
-                            <div class="detail-row">
-                                <span class="detail-label">Price Range:</span>
-                                <span class="detail-value">$${sourceData.price_range.min.toFixed(2)} - $${sourceData.price_range.max.toFixed(2)}</span>
+                    <div class="source-dropdown">
+                        <div class="source-header" onclick="toggleSourceDetails('${sourceId}')">
+                            <div class="source-logo">
+                                <div class="logo-container">
+                                    <span class="logo-text">${formatLogoText(source)}</span>
+                                </div>
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Average Price:</span>
-                                <span class="detail-value">$${sourceData.avg_price.toFixed(2)}</span>
+                            <div class="source-summary">
+                                <h4>${source.toUpperCase()}</h4>
+                                <div class="price-value">$${sourceData.median_price.toFixed(2)}</div>
+                                <div class="price-type">MEDIAN PRICE</div>
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Median Price:</span>
-                                <span class="detail-value">$${sourceData.median_price.toFixed(2)}</span>
+                            <div class="dropdown-arrow">
+                                <i class="arrow-down" id="${sourceId}-arrow"></i>
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Standard Deviation:</span>
-                                <span class="detail-value">$${sourceData.std_deviation.toFixed(2)}</span>
+                        </div>
+                        <div class="source-details" id="${sourceId}" style="display: none;">
+                            <div class="details-grid">
+                                <div class="detail-card">
+                                    <div class="detail-title">Price Range</div>
+                                    <div class="detail-value">$${sourceData.price_range.min.toFixed(2)} - $${sourceData.price_range.max.toFixed(2)}</div>
+                                </div>
+                                <div class="detail-card">
+                                    <div class="detail-title">Average Price</div>
+                                    <div class="detail-value">$${sourceData.avg_price.toFixed(2)}</div>
+                                </div>
+                                <div class="detail-card">
+                                    <div class="detail-title">Median Price</div>
+                                    <div class="detail-value">$${sourceData.median_price.toFixed(2)}</div>
+                                </div>
+                                <div class="detail-card">
+                                    <div class="detail-title">Standard Deviation</div>
+                                    <div class="detail-value">$${sourceData.std_deviation.toFixed(2)}</div>
+                                </div>
                             </div>
-                            <div class="prices-list">
-                                <span class="detail-label">Individual Prices:</span>
+                            <div class="individual-prices">
+                                <div class="prices-title">Individual Prices (${sourceData.count})</div>
                                 <div class="price-chips">
                                     ${sourceData.prices.map(price => `<span class="price-chip">$${price.toFixed(2)}</span>`).join('')}
                                 </div>
+                            </div>
+                            <div class="source-actions">
+                                <button onclick="acceptSourcePrice('${source}', ${sourceData.median_price})" class="accept-source-button">Accept This Price</button>
                             </div>
                         </div>
                     </div>`;
@@ -252,7 +273,290 @@ function Next() {
                 </div>
             </div>`;
 
+            // Add CSS styles for the dropdown functionality
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                /* General Styles */
+                .price-analysis-container {
+                    font-family: Arial, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                
+                /* Source Dropdown Styles */
+                .source-dropdown {
+                    margin-bottom: 15px;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                }
+                
+                .source-header {
+                    background-color: #3a3b3f;
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    padding: 15px;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                }
+                
+                .source-header:hover {
+                    background-color: #4a4b50;
+                }
+                
+                .source-logo {
+                    margin-right: 15px;
+                    flex-shrink: 0;
+                }
+                
+                .logo-container {
+                    background-color: white;
+                    width: 70px;
+                    height: 70px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }
+                
+                .logo-text {
+                    color: black;
+                    font-weight: bold;
+                    font-size: 12px;
+                    line-height: 1.2;
+                }
+                
+                .source-summary {
+                    flex-grow: 1;
+                }
+                
+                .source-summary h4 {
+                    margin: 0 0 5px 0;
+                    font-size: 18px;
+                    font-weight: lighter;
+                    color: #c0c0c0;
+                }
+                
+                .price-value {
+                    font-size: 32px;
+                    font-weight: bold;
+                    color: #4d8eff;
+                }
+                
+                .price-type {
+                    font-size: 14px;
+                    color: #c0c0c0;
+                }
+                
+                .dropdown-arrow {
+                    margin-left: 15px;
+                }
+                
+                .arrow-down {
+                    border: solid white;
+                    border-width: 0 3px 3px 0;
+                    display: inline-block;
+                    padding: 5px;
+                    transform: rotate(45deg);
+                    transition: transform 0.3s;
+                }
+                
+                .arrow-up {
+                    transform: rotate(-135deg);
+                }
+                
+                /* Details Section */
+                .source-details {
+                    background-color: #f5f5f5;
+                    padding: 20px;
+                    border-top: 1px solid #ddd;
+                }
+                
+                .details-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 15px;
+                    margin-bottom: 20px;
+                }
+                
+                .detail-card {
+                    background-color: white;
+                    padding: 12px;
+                    border-radius: 5px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                }
+                
+                .detail-title {
+                    color: #666;
+                    font-size: 14px;
+                    margin-bottom: 5px;
+                }
+                
+                .detail-value {
+                    font-weight: bold;
+                    font-size: 16px;
+                }
+                
+                .individual-prices {
+                    background-color: white;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin-bottom: 15px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                }
+                
+                .prices-title {
+                    color: #666;
+                    margin-bottom: 10px;
+                }
+                
+                .price-chips {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+                
+                .price-chip {
+                    background-color: #e6f0ff;
+                    color: #0055cc;
+                    padding: 5px 10px;
+                    border-radius: 15px;
+                    font-size: 14px;
+                }
+                
+                .source-actions {
+                    margin-top: 15px;
+                }
+                
+                .accept-source-button {
+                    background-color: #2563eb;
+                    color: white;
+                    border: none;
+                    padding: 10px 15px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    width: 100%;
+                    font-size: 16px;
+                    transition: background-color 0.2s;
+                }
+                
+                .accept-source-button:hover {
+                    background-color: #1d4ed8;
+                }
+                
+                /* Summary Styles */
+                .price-summary-section {
+                    margin-bottom: 25px;
+                }
+                
+                .price-highlight {
+                    background-color: #e6f0ff;
+                    padding: 15px;
+                    border-radius: 8px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin: 15px 0;
+                }
+                
+                .price-highlight .label {
+                    font-weight: bold;
+                    color: #444;
+                }
+                
+                .price-highlight .value {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #0055cc;
+                }
+                
+                .price-details {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
+                }
+                
+                .detail-item {
+                    background-color: white;
+                    padding: 12px;
+                    border-radius: 5px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                }
+                
+                .detail-item .label {
+                    color: #666;
+                    display: block;
+                    margin-bottom: 5px;
+                }
+                
+                .detail-item .value {
+                    font-weight: bold;
+                }
+                
+                .action-buttons {
+                    margin-top: 20px;
+                    text-align: center;
+                }
+                
+                .accept-button {
+                    background-color: #16a34a;
+                    color: white;
+                    border: none;
+                    padding: 12px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    transition: background-color 0.2s;
+                }
+                
+                .accept-button:hover {
+                    background-color: #15803d;
+                }
+                
+                /* Mobile Responsiveness */
+                @media (max-width: 600px) {
+                    .price-details {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .details-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .source-header {
+                        flex-wrap: wrap;
+                    }
+                    
+                    .source-logo {
+                        margin-bottom: 10px;
+                    }
+                }
+            `;
+            document.head.appendChild(styleElement);
+
             document.getElementById('pricesuggestion').innerHTML = display;
+            
+            // Add the toggle function to the global scope
+            window.toggleSourceDetails = function(sourceId) {
+                const detailsElement = document.getElementById(sourceId);
+                const arrowElement = document.getElementById(`${sourceId}-arrow`);
+                
+                if (detailsElement.style.display === 'none') {
+                    detailsElement.style.display = 'block';
+                    arrowElement.classList.add('arrow-up');
+                } else {
+                    detailsElement.style.display = 'none';
+                    arrowElement.classList.remove('arrow-up');
+                }
+            };
+            
+            // Add the accept source price function
+            window.acceptSourcePrice = function(source, price) {
+                console.log(`Accepting price from ${source}: $${price}`);
+                acceptSuggestedPrice(price);
+            };
+            
         } else {
             // Error message using SweetAlert
             Swal.fire(
@@ -271,6 +575,21 @@ function Next() {
             'error'
         );
     });
+}
+
+// Helper function to format source name for logo display
+function formatLogoText(source) {
+    const name = source.toUpperCase();
+    if (name.length <= 5) {
+        return name;
+    }
+    
+    // Try to split at a logical point
+    const midPoint = Math.ceil(name.length / 2);
+    const firstHalf = name.substring(0, midPoint);
+    const secondHalf = name.substring(midPoint);
+    
+    return `${firstHalf}<br>${secondHalf}`;
 }
 
 // Helper functions for the price actions

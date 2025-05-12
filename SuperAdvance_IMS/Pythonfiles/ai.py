@@ -63,7 +63,7 @@ class PriceScraper:
         except ValueError:
             return None
     
-    def scrape_ebay(self, product_name, max_items=50):
+    def scrape_ebay(self, product_name, max_items=15):
         """Scrape prices from eBay"""
         logger.info(f"Scraping eBay prices for: {product_name}")
         try:
@@ -99,7 +99,7 @@ class PriceScraper:
         except Exception as e:
             logger.error(f"Error scraping eBay: {e}")
     
-    def scrape_amazon(self, product_name, max_items=50):
+    def scrape_amazon(self, product_name, max_items=15):
         """Scrape prices from Amazon"""
         logger.info(f"Scraping Amazon prices for: {product_name}")
         try:
@@ -124,7 +124,7 @@ class PriceScraper:
         except Exception as e:
             logger.error(f"Error scraping Amazon: {e}")
     
-    def scrape_newegg(self, product_name, max_items=50):
+    def scrape_newegg(self, product_name, max_items=15):
         """Scrape prices from Newegg"""
         logger.info(f"Scraping Newegg prices for: {product_name}")
         try:
@@ -157,7 +157,7 @@ class PriceScraper:
         except Exception as e:
             logger.error(f"Error scraping Newegg: {e}")
     
-    def scrape_bestbuy(self, product_name, max_items=50):
+    def scrape_bestbuy(self, product_name, max_items=15):
         """Scrape prices from Best Buy"""
         logger.info(f"Scraping Best Buy prices for: {product_name}")
         try:
@@ -183,11 +183,11 @@ class PriceScraper:
         except Exception as e:
             logger.error(f"Error scraping Best Buy: {e}")
     
-    def scrape_pcexpress(self, product_name, max_items=50):
+    def scrape_pcexpress(self, product_name, max_items=15):
         """Scrape prices from PC Express"""
         logger.info(f"Scraping PC Express prices for: {product_name}")
         try:
-            search_term = product_name.replace(' ', '%20')
+            search_term = product_name.replace(' ', '%10')
             url = f"https://pcx.com.ph/search?type=product&options%5Bunavailable_products%5D=hide&options%5Bprefix%5D=last&q={search_term}"
             
             response = requests.get(url, headers=self.get_random_headers(), timeout=10)
@@ -211,7 +211,7 @@ class PriceScraper:
         except Exception as e:
             logger.error(f"Error scraping PC Express: {e}")
     
-    def scrape_microcenter(self, product_name, max_items=50):
+    def scrape_microcenter(self, product_name, max_items=15):
         """Scrape prices from Micro Center"""
         logger.info(f"Scraping Micro Center prices for: {product_name}")
         try:
@@ -239,7 +239,7 @@ class PriceScraper:
         except Exception as e:
             logger.error(f"Error scraping Micro Center: {e}")
     
-    def scrape_bhphotovideo(self, product_name, max_items=50):
+    def scrape_bhphotovideo(self, product_name, max_items=15):
         """Scrape prices from B&H Photo Video"""
         logger.info(f"Scraping B&H Photo Video prices for: {product_name}")
         try:
