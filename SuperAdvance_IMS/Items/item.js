@@ -94,9 +94,8 @@ function SaveItems() {
                 Img: base64String // This will be the LONGBLOB data as a base64 string
             };
 
+            popoverupdate("secondaddpage","none")
             
-            document.getElementById("secondaddpage").style.display = "none";
-
             
             // Ask for confirmation before submitting
             Swal.fire({
@@ -147,10 +146,9 @@ function SaveItems() {
                             'error'
                         );
                     });
-
-                document.getElementById("firstaddpage").style.display = "block";
+                popoverupdate("firstaddpage","block")
                 } else {
-                document.getElementById("secondaddpage").style.display = "block";                  
+                popoverupdate("secondaddpage","block")
                 }
             });
         };
@@ -169,8 +167,9 @@ function SaveItems() {
 
 // Frontend JavaScript Fix
 function Next() {
-    document.getElementById("firstaddpage").style.display = "none";
-    document.getElementById("secondaddpage").style.display = "block";
+
+    popoverupdate("firstaddpage","none")
+    popoverupdate("secondaddpage","block")
 
     // Create the item data object with proper property names
     const itemData = {
@@ -357,7 +356,10 @@ function formatLogoText(source) {
     return `${firstHalf}<br>${secondHalf}`;
 }
 
-
+function popoverupdate(ID,type){
+            document.getElementById(ID).style.display = type;
+}
+window.popoverupdate = popoverupdate;
 
 // Make sure the function is available globally
 window.SaveItems = SaveItems;
