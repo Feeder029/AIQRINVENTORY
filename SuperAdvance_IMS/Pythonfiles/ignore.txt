@@ -1,0 +1,57 @@
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+import mysql.connector
+
+def get_connection(database_name):
+    return mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='',
+        database=database_name
+    )
+
+def getMobileCodes():
+    
+    try:
+        with get_connection('ai_inventory') as conn:
+            cursor = conn.cursor()
+            query = """
+                SELECT a.I_MobileCode 
+                FROM `item` a  
+                WHERE a.I_MobileCode IS NOT NULL 
+                  AND TRIM(a.I_MobileCode) != '';
+            """
+            cursor.execute(query)
+            result = cursor.fetchall()
+            # Extract and return just the code strings
+            return [row[0] for row in result]
+      
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+        return []
+
+def Comparison(mobile):
+    
+    cred = credentials.Certificate(r"C:\xampp\htdocs\AIQRINVENTORY\SuperAdvance_IMS\Database\appdev-mobile-firebase-adminsdk-fbsvc-3ca86cad14.json")
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    
+    products_ref = db.collection('products')
+    products_docs = products_ref.stream()
+    
+    all_products = []
+    
+    for doc in products_docs:
+     # Get document data as dictionary
+     product_data = doc.to_dict()
+    
+     # Add document ID to the dictionary
+     product_data['document_id'] = doc.id
+    
+     # Add to our products list
+     all_products.append(product_data)
+
+if __name__ == "__main__":
+    mobile = getMobileCodes()
+    Comparison(mobile)

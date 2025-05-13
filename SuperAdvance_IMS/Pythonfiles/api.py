@@ -8,6 +8,8 @@ import os
 import itemqr
 import base64
 import ai
+import firebaseconnection
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -32,6 +34,7 @@ def get_connection2():
 @app.route('/api/displayitems', methods=['GET'])
 def GetProducts():
     synchronize.synchronize_inventory()
+    firebaseconnection.syncronize()
 
     sql = """
         SELECT `ItemID`, `I_LegacyCode`, `I_Name`, `I_Discount`, `I_UnitPrice`, 
@@ -271,16 +274,20 @@ def AddItem():
             
             LID = cursor2.lastrowid
             
+            WebID = f"W{AID}"
+
             # Update the first database with the legacy ID
             update = """
-            UPDATE `item` SET `I_LegacyCode`= %s WHERE `ItemID`= %s      
+            UPDATE `item` SET `I_LegacyCode`= %s,`I_MobileCode`= %s WHERE `ItemID`= %s      
             """
             cursor.execute(update, (
-                LID, AID
+                LID, WebID, AID
             ))
             
             conn.commit()
             conn2.commit()  # Make sure to commit the second connection too
+            
+            firebaseconnection.newproduct(WebID,ItemName,ItemDescription,ItemUnitPrice,ItemQuantity,relative_path)
             
             return jsonify({
                 "status": "success", 
@@ -288,6 +295,8 @@ def AddItem():
                 "image_path": relative_path
             })
             
+            
+
         except mysql.connector.Error as err2:
             # If second insert fails, rollback first insert
             conn.rollback()

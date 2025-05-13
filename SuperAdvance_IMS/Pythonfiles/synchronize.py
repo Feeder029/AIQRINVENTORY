@@ -4,6 +4,7 @@ import mysql.connector
 import itemqr
 import os
 import ai
+import firebaseconnection
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -38,6 +39,8 @@ def get_image_path(item_number, image_url):
     return f"http://localhost/AIQRINVENTORY/Advance_IMS/data/item_images/{item_number}/{filename}"
 
 def add_item(item, qrpath, qrcode,SuggestedPrice,MaxPrice,MinPrice,EbaySP,EbayDetails,MCSPs,MCDetails,AmazonSPs,AmazonDetails,WallmartSP,WallmartDetails):
+   
+
     """Add item to AI inventory database"""
     try:
         with get_connection('ai_inventory') as conn:
@@ -48,16 +51,18 @@ def add_item(item, qrpath, qrcode,SuggestedPrice,MaxPrice,MinPrice,EbaySP,EbayDe
             
             query = """
              INSERT INTO item (
-              I_LegacyCode, I_Name, I_Discount, I_UnitPrice, 
+              I_LegacyCode, `I_MobileCode`, I_Name, I_Discount, I_UnitPrice, 
               I_Status, I_Stock, I_Description, `I_QRCode`, 
               `I_QRPath`, `I_ImagePath`, `I_SuggestedPrice`, `I_MaxPriceRange`, 
               `I_MinPriceRange`, `I_EbaySuggestedPrice`, `I_EbayFullInfo`, `I_MCSuggestedPrice`, 
               `I_MCFullInfo`, `I_AmazonSuggestedPrice`, `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`
-             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-     
+
+            MobileID = f"L{item['productID']}"
+
             cursor.execute(query, (
-                item['productID'], item['itemName'], item['discount'], item['unitPrice'], 
+                item['productID'],MobileID,item['itemName'], item['discount'], item['unitPrice'], 
                 item['status'], item['stock'], item['description'], qrcode, 
                 qrpath,image_path,SuggestedPrice,MaxPrice,
                 MinPrice,EbaySP,EbayDetails,MCSPs,
@@ -65,8 +70,12 @@ def add_item(item, qrpath, qrcode,SuggestedPrice,MaxPrice,MinPrice,EbaySP,EbayDe
             ))
             
             conn.commit()
+
             print(f"Item {item['productID']} successfully inserted")
-            
+        
+        MobileID = f"L{item['productID']}"
+        firebaseconnection.newproduct(MobileID,item['itemName'],item['description'],item['unitPrice'],item['stock'],image_path)
+
     except mysql.connector.Error as err:
         print(f"Database Error: {err}")
 
@@ -161,9 +170,7 @@ def synchronize_inventory():
                 EbayDetails = ""
                 MCDetails = ""
                 WallmartDetails = ""
-
-
-                
+   
                 for source, data in suggestion['detailed'].items():
                   if source.upper() == 'EBAY':
                    EbaySP = data['suggested_price']
@@ -791,7 +798,7 @@ def update_sale(sale, ProductID, CustomerID, saleID):
 if __name__ == "__main__":
     print("start")
 
-    synchronize_sale()
+    # synchronize_sale()
     # synchronize_purchase()
     # synchronize_vendor()
     # synchronize_inventory()

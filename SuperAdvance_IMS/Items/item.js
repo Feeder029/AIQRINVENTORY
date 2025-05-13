@@ -16,7 +16,7 @@ function displayItems() {
                 // Fall back to placeholder if no valid image path
                 const imageDisplay = imagePath ? 
                     `<img src="${imagePath}" alt="${item.I_Name}" onerror="this.onerror=null; this.src='./assets/placeholder.jpg';">` : 
-                    `<div class="placeholder-text">Product Image</div>`;
+                    `<img src="../Images/data/Placeholder.png" alt="${item.I_Name}" onerror="this.onerror=null; this.src='./assets/placeholder.jpg';">`;
                 
                 display += `
                     <div class="item-container">
