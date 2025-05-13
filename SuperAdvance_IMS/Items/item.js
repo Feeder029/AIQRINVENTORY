@@ -1,4 +1,3 @@
-
 import { fetchData } from '../Function/getdata.js';
 
 function displayItems() {
@@ -60,6 +59,7 @@ function displayItems() {
                 `;
             });
 
+            document.getElementById('loading').style.display = 'none';
             document.getElementById('items_display').innerHTML = display;
         } else {
             console.log("No items found");
@@ -70,6 +70,19 @@ function displayItems() {
 
 window.SaveItems = SaveItems;
 window.Next = Next;
+
+
+let SP = 0;
+let Max = 0;
+let Min = 0;
+let EbaySP = 0;
+let EbayInfo = "";
+let MCSPs = 0;
+let MCInfo = "";
+let AmazonSP = null;
+let AmazonInfo = "";
+let WalmartSP = 0;
+let WalmartInfo = "";
 
 function SaveItems() {
     // Get file input element
@@ -85,13 +98,24 @@ function SaveItems() {
             const base64String = event.target.result;
             
             // Create the item data object with the base64 image data
-            const itemData = {
+            const itemData = {            
                 Name: document.getElementById('ProductName').value,
                 Desc: document.getElementById('Description').value,
                 Quantity: parseInt(document.getElementById('Quantity').value),
                 UnitPrice: parseFloat(document.getElementById('UnitPrice').value),
                 Discount: parseFloat(document.getElementById('Discount').value),
-                Img: base64String // This will be the LONGBLOB data as a base64 string
+                Img: base64String,
+                SP: SP,
+                Max: Max,
+                Min: Min,
+                EbaySP: EbaySP,
+                EbayInfo: EbayInfo,
+                MCSPs: MCSPs,
+                MCInfo: MCInfo,
+                AmazonSP: AmazonSP,
+                AmazonInfo: AmazonInfo,
+                WalmartSP: WalmartSP,
+                WalmartInfo: WalmartInfo  
             };
 
             popoverupdate("secondaddpage","none")
@@ -193,6 +217,12 @@ function Next() {
     .then(data => {
         if (data.success) { 
             console.log("Price data received:", data);
+
+
+            SP = data.suggestedPrice.toFixed(2);
+            Min = data.suggestedRanges.midrange.min.toFixed(2);
+            Max = data.suggestedRanges.midrange.max.toFixed(2);
+
             
             // Create the summary section
             let display = `
@@ -201,12 +231,12 @@ function Next() {
                     <h2>Price Analysis for ${itemData.itemName}</h2>
                     <div class="price-highlight">
                         <span class="label">Suggested Price:</span>
-                        <span class="value">$${data.suggestedPrice.toFixed(2)}</span>
+                        <span class="value" id="SG_Price">$${SP}</span>
                     </div>
                     <div class="price-details">
                         <div class="detail-item">
                             <span class="label">Mid Range Price Range:</span>
-                            <span class="value">$${data.suggestedRanges.midrange.min.toFixed(2)} - $${data.suggestedRanges.midrange.max.toFixed(2)}</span>
+                            <span class="value">$${Min} - $${Max}</span>
                         </div>
                         <div class="detail-item">
                             <span class="label">Confidence:</span>
@@ -224,6 +254,31 @@ function Next() {
             
             // Add detailed results for each source with dropdown functionality
             for (const [source, sourceData] of Object.entries(data.detailedResults)) {
+
+                switch(source.toUpperCase()){
+                    case "AMAZON":
+                        AmazonSP = sourceData.SuggestedPrice.toFixed(2);
+                        AmazonInfo = WebInfo(sourceData.count,sourceData.price_range.min.toFixed(2),sourceData.price_range.max.toFixed(2),sourceData.avg_price.toFixed(2),sourceData.median_price.toFixed(2),sourceData.std_deviation.toFixed(2));
+                        console.log("Amazon Added");
+                        console.log(AmazonInfo);
+                    case "EBAY":
+                        EbaySP = sourceData.SuggestedPrice.toFixed(2);
+                        EbayInfo = WebInfo(sourceData.count,sourceData.price_range.min.toFixed(2),sourceData.price_range.max.toFixed(2),sourceData.avg_price.toFixed(2),sourceData.median_price.toFixed(2),sourceData.std_deviation.toFixed(2));
+                        console.log("EBAY Added");
+                        console.log(EbayInfo);
+                    case "MICROCENTER":
+                        MCSPs = sourceData.SuggestedPrice.toFixed(2);
+                        MCInfo = WebInfo(sourceData.count,sourceData.price_range.min.toFixed(2),sourceData.price_range.max.toFixed(2),sourceData.avg_price.toFixed(2),sourceData.median_price.toFixed(2),sourceData.std_deviation.toFixed(2));
+                        console.log("MICROCENTER Added");
+                        console.log(MCInfo);
+                    case "WALMART":
+                        WalmartSP = sourceData.SuggestedPrice.toFixed(2);
+                        WalmartInfo = WebInfo(sourceData.count,sourceData.price_range.min.toFixed(2),sourceData.price_range.max.toFixed(2),sourceData.avg_price.toFixed(2),sourceData.median_price.toFixed(2),sourceData.std_deviation.toFixed(2));
+                        console.log("MICROCENTER Added");
+                        console.log(MCInfo);
+                    default:
+                        console.log(source.toUpperCase());
+                }
                 const sourceId = `source-${source.replace(/[^a-z0-9]/gi, '')}`;
                 display += `
                     <div class="source-dropdown">
@@ -272,6 +327,9 @@ function Next() {
                             </div>
                         </div>
                     </div>`;
+
+
+                
             }
             
             display += `
@@ -321,6 +379,11 @@ function Next() {
             'error'
         );
     });
+}
+
+function WebInfo(C, Min, Max, AVG, MDN, STR) {
+    const Info = `Item Count: ${C}, Price Range: $${Min} - $${Max}, Average Price: $${AVG}, Median Price: $${MDN}, Standard Deviation: $${STR}`;
+    return Info;
 }
 
 function pricecomparison(value,min,max){

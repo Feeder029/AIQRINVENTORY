@@ -5,120 +5,182 @@ import statistics
 import time
 import random
 import pandas as pd
+import numpy as np
 from fake_useragent import UserAgent
 import logging
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import matplotlib.pyplot as plt
 import hashlib
+import http.client
+import urllib.parse
+from statsmodels.tsa.arima.model import ARIMA
+from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+import cloudscraper  # For bypassing Cloudflare protection
 
-# Set up logging
+# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class PriceScraper:
     def __init__(self):
         self.ua = UserAgent()
-        # Added more electronics retailers to the prices dictionary
-        self.prices = {
-            'ebay': [],
-            'amazon': [],
-            'newegg': [],
-            'bestbuy': [],
-            'pcexpress': [],
-            'microcenter': [],
-            'bhphotovideo': []
-        }
+        # Updated list of sources - removed bonanza, craigslist, wish and added walmart
+        self.prices = {'ebay': [], 'amazon': [], 'microcenter': [], 'walmart': []}
         self.stats = {}
         self.source_stats = {}
-        self.source_suggested_prices = {}  # New dictionary to store per-source suggested prices
-        self.price_history = {}  # For tracking previous searches
+        self.source_suggested_prices = {}
+        self.price_history = {}
+        self.arima_predictions = {}
+        self.selenium_driver = None
+        self.cloudscraper = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'mobile': False
+            },
+            delay=10
+        )
         
-    def get_random_headers(self):
+    def initialize_selenium(self):
+        """Initialize Selenium WebDriver for JavaScript rendering"""
+        if self.selenium_driver is None:
+            try:
+                chrome_options = Options()
+                chrome_options.add_argument("--headless")
+                chrome_options.add_argument("--no-sandbox")
+                chrome_options.add_argument("--disable-dev-shm-usage")
+                chrome_options.add_argument(f"user-agent={self.ua.random}")
+                chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+                chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+                chrome_options.add_experimental_option('useAutomationExtension', False)
+                
+                service = Service(ChromeDriverManager().install())
+                self.selenium_driver = webdriver.Chrome(service=service, options=chrome_options)
+                
+                # Execute CDP commands to prevent detection
+                self.selenium_driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                    "source": """
+                        Object.defineProperty(navigator, 'webdriver', {
+                            get: () => undefined
+                        });
+                    """
+                })
+                
+                logger.info("Selenium WebDriver initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize Selenium WebDriver: {e}")
+    
+    def close_selenium(self):
+        """Close Selenium WebDriver"""
+        if self.selenium_driver:
+            self.selenium_driver.quit()
+            self.selenium_driver = None
+    
+    def get_headers(self):
         """Generate random headers to avoid detection"""
         return {
             'User-Agent': self.ua.random,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://www.google.com/',
+            'DNT': '1',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
             'Cache-Control': 'max-age=0',
-            'Sec-CH-UA': '"Chromium";v="112", "Google Chrome";v="112", "Not:A-Brand";v="99"',
-            'Sec-CH-UA-Mobile': '?0',
-            'Sec-CH-UA-Platform': '"Windows"',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Sec-Fetch-User': '?1',
-            'Referer': 'https://www.google.com/'
+            'TE': 'Trailers'
         }
     
     def clean_price(self, price_str):
         """Extract and clean price from string"""
         if not price_str:
             return None
-        
-        # Remove currency symbols, commas and whitespace
         cleaned = re.sub(r'[^\d.]', '', price_str)
-        
         try:
             return float(cleaned)
         except ValueError:
             return None
     
-    def scrape_ebay(self, product_name, max_items=15):
-        """Scrape prices from eBay"""
-        logger.info(f"Scraping eBay prices for: {product_name}")
+    def random_delay(self, min_seconds=1, max_seconds=3):
+        """Add random delay to avoid detection"""
+        delay = random.uniform(min_seconds, max_seconds)
+        time.sleep(delay)
+        return delay
+    
+    def scrape_site(self, site, product_name, max_items=20):
+        """Generic scraping function that calls the appropriate site-specific method"""
+        scrape_methods = {
+            'ebay': self._scrape_ebay,
+            'amazon': self._scrape_amazon,
+            'microcenter': self._scrape_microcenter,
+            'walmart': self._scrape_walmart
+        }
+        
+        if site in scrape_methods:
+            return scrape_methods[site](product_name, max_items)
+        return []
+    
+    def _scrape_ebay(self, product_name, max_items=20):
+        """Scrape prices from eBay using CloudScraper"""
         try:
-            # Replace spaces with plus signs for URL
             search_term = product_name.replace(' ', '+')
             url = f"https://www.ebay.com/sch/i.html?_nkw={search_term}&_sacat=0"
             
-            response = requests.get(url, headers=self.get_random_headers(), timeout=10)
-            response.raise_for_status()
+            # Use cloudscraper instead of regular requests
+            response = self.cloudscraper.get(url, headers=self.get_headers())
             
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch eBay data: Status code {response.status_code}")
+                return
+                
             soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Target the search results
             items = soup.select('li.s-item')[:max_items]
             
             for item in items:
-                # Get price
                 price_elem = item.select_one('.s-item__price')
-                
                 if price_elem:
                     price_text = price_elem.text.strip()
-                    
-                    # Skip price ranges
-                    if 'to' in price_text.lower():
-                        continue
-                        
-                    price = self.clean_price(price_text)
-                    if price:
-                        self.prices['ebay'].append(price)
+                    if 'to' not in price_text.lower():
+                        price = self.clean_price(price_text)
+                        if price:
+                            self.prices['ebay'].append(price)
             
             logger.info(f"Found {len(self.prices['ebay'])} prices from eBay")
             
         except Exception as e:
             logger.error(f"Error scraping eBay: {e}")
+        
+        self.random_delay()
     
-    def scrape_amazon(self, product_name, max_items=15):
-        """Scrape prices from Amazon"""
-        logger.info(f"Scraping Amazon prices for: {product_name}")
+    def _scrape_amazon(self, product_name, max_items=20):
+        """Scrape prices from Amazon using Selenium for better anti-bot bypass"""
         try:
+            self.initialize_selenium()
+            if not self.selenium_driver:
+                logger.error("Selenium WebDriver not available for Amazon scraping")
+                return
+                
             search_term = product_name.replace(' ', '+')
             url = f"https://www.amazon.com/s?k={search_term}"
             
-            response = requests.get(url, headers=self.get_random_headers(), timeout=10)
-            response.raise_for_status()
+            self.selenium_driver.get(url)
             
-            soup = BeautifulSoup(response.text, 'html.parser')
+            # Wait for price elements to load
+            WebDriverWait(self.selenium_driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".a-price"))
+            )
             
-            # Amazon's price elements
-            price_elements = soup.select('.a-price .a-offscreen')[:max_items]
+            # Extract prices
+            price_elements = self.selenium_driver.find_elements(By.CSS_SELECTOR, '.a-price .a-offscreen')[:max_items]
             
             for price_elem in price_elements:
-                price = self.clean_price(price_elem.text)
+                price = self.clean_price(price_elem.get_attribute('innerHTML'))
                 if price:
                     self.prices['amazon'].append(price)
             
@@ -126,114 +188,25 @@ class PriceScraper:
             
         except Exception as e:
             logger.error(f"Error scraping Amazon: {e}")
+            
+        self.random_delay(3, 6)
     
-    def scrape_newegg(self, product_name, max_items=15):
-        """Scrape prices from Newegg"""
-        logger.info(f"Scraping Newegg prices for: {product_name}")
-        try:
-            search_term = product_name.replace(' ', '+')
-            url = f"https://www.newegg.com/p/pl?d={search_term}"
-            
-            response = requests.get(url, headers=self.get_random_headers(), timeout=10)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Newegg's price elements
-            items = soup.select('.item-cell')[:max_items]
-            
-            for item in items:
-                price_elem = item.select_one('.price-current strong')
-                if price_elem:
-                    # Newegg splits price into dollars and cents
-                    price_text = price_elem.text.strip()
-                    cents_elem = item.select_one('.price-current sup')
-                    if cents_elem:
-                        price_text += cents_elem.text.strip()
-                    
-                    price = self.clean_price(price_text)
-                    if price:
-                        self.prices['newegg'].append(price)
-            
-            logger.info(f"Found {len(self.prices['newegg'])} prices from Newegg")
-            
-        except Exception as e:
-            logger.error(f"Error scraping Newegg: {e}")
-    
-    def scrape_bestbuy(self, product_name, max_items=15):
-        """Scrape prices from Best Buy"""
-        logger.info(f"Scraping Best Buy prices for: {product_name}")
-        try:
-            search_term = product_name.replace(' ', '+')
-            url = f"https://www.bestbuy.com/site/searchpage.jsp?st={search_term}"
-            
-            response = requests.get(url, headers=self.get_random_headers(), timeout=10)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Best Buy's price elements
-            price_elements = soup.select('.priceView-customer-price span')[:max_items]
-            
-            for price_elem in price_elements:
-                price_text = price_elem.text.strip()
-                price = self.clean_price(price_text)
-                if price:
-                    self.prices['bestbuy'].append(price)
-            
-            logger.info(f"Found {len(self.prices['bestbuy'])} prices from Best Buy")
-            
-        except Exception as e:
-            logger.error(f"Error scraping Best Buy: {e}")
-    
-    def scrape_pcexpress(self, product_name, max_items=15):
-        """Scrape prices from PC Express"""
-        logger.info(f"Scraping PC Express prices for: {product_name}")
-        try:
-            search_term = product_name.replace(' ', '%10')
-            url = f"https://pcx.com.ph/search?type=product&options%5Bunavailable_products%5D=hide&options%5Bprefix%5D=last&q={search_term}"
-            
-            response = requests.get(url, headers=self.get_random_headers(), timeout=10)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # PC Express price elements
-            product_items = soup.select('.product-tile')[:max_items]
-            
-            for item in product_items:
-                price_elem = item.select_one('.price__amount')
-                if price_elem:
-                    price_text = price_elem.text.strip()
-                    price = self.clean_price(price_text)
-                    if price:
-                        self.prices['pcexpress'].append(price)
-            
-            logger.info(f"Found {len(self.prices['pcexpress'])} prices from PC Express")
-            
-        except Exception as e:
-            logger.error(f"Error scraping PC Express: {e}")
-    
-    def scrape_microcenter(self, product_name, max_items=15):
+    def _scrape_microcenter(self, product_name, max_items=20):
         """Scrape prices from Micro Center"""
-        logger.info(f"Scraping Micro Center prices for: {product_name}")
         try:
             search_term = product_name.replace(' ', '+')
             url = f"https://www.microcenter.com/search/search_results.aspx?N=&cat=&Ntt={search_term}"
             
-            response = requests.get(url, headers=self.get_random_headers(), timeout=10)
+            response = requests.get(url, headers=self.get_headers(), timeout=15)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Micro Center price elements
             product_items = soup.select('.product_wrapper')[:max_items]
             
             for item in product_items:
                 price_elem = item.select_one('.price')
                 if price_elem:
-                    price_text = price_elem.text.strip()
-                    price = self.clean_price(price_text)
+                    price = self.clean_price(price_elem.text.strip())
                     if price:
                         self.prices['microcenter'].append(price)
             
@@ -241,111 +214,180 @@ class PriceScraper:
             
         except Exception as e:
             logger.error(f"Error scraping Micro Center: {e}")
+            
+        self.random_delay()
     
-    def scrape_bhphotovideo(self, product_name, max_items=15):
-        """Scrape prices from B&H Photo Video"""
-        logger.info(f"Scraping B&H Photo Video prices for: {product_name}")
+    def _scrape_walmart(self, product_name, max_items=20):
+        """Scrape prices from Walmart using RapidAPI"""
         try:
-            search_term = product_name.replace(' ', '+')
-            url = f"https://www.bhphotovideo.com/c/search?q={search_term}"
+            logger.info(f"Fetching Walmart prices via API for: {product_name}")
             
-            response = requests.get(url, headers=self.get_random_headers(), timeout=10)
-            response.raise_for_status()
+            # Encode the search keyword for URL
+            encoded_keyword = urllib.parse.quote(product_name)
             
-            soup = BeautifulSoup(response.text, 'html.parser')
+            # Set up the connection
+            conn = http.client.HTTPSConnection("realtime-walmart-data.p.rapidapi.com")
             
-            # B&H price elements
-            product_items = soup.select('.productItem')[:max_items]
+            # API headers
+            headers = {
+                'x-rapidapi-key': "d568155300msh716e81d8be7c8a2p14190ajsn96af85a3334c",
+                'x-rapidapi-host': "realtime-walmart-data.p.rapidapi.com"
+            }
             
-            for item in product_items:
-                price_elem = item.select_one('.price')
-                if price_elem:
-                    price_text = price_elem.text.strip()
-                    price = self.clean_price(price_text)
-                    if price:
-                        self.prices['bhphotovideo'].append(price)
+            # Make the request
+            conn.request("GET", f"/search?keyword={encoded_keyword}&sort=best_match", headers=headers)
             
-            logger.info(f"Found {len(self.prices['bhphotovideo'])} prices from B&H Photo Video")
+            # Get the response
+            res = conn.getresponse()
+            data = res.read()
             
+            # Parse the JSON data
+            json_data = json.loads(data.decode("utf-8"))
+            
+            # Check if the request was successful
+            if json_data.get("status") == "success" and "results" in json_data:
+                # Extract product prices
+                count = 0
+                for product in json_data["results"]:
+                    if count >= max_items:
+                        break
+                        
+                    if "price" in product:
+                        price_text = str(product["price"])
+                        price = self.clean_price(price_text)
+                        if price:
+                            self.prices['walmart'].append(price)
+                            count += 1
+                
+                logger.info(f"Found {len(self.prices['walmart'])} prices from Walmart API")
+            else:
+                logger.error(f"Walmart API error: {json_data.get('message', 'Unknown error')}")
+                
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON data from Walmart API: {e}")
+        except KeyError as e:
+            logger.error(f"Missing key in Walmart API data: {e}")
         except Exception as e:
-            logger.error(f"Error scraping B&H Photo Video: {e}")
+            logger.error(f"Error accessing Walmart API: {e}")
+            
+        self.random_delay(2, 4)
     
     def _get_product_hash(self, product_name):
-        """Generate a consistent hash for the product name to use as identifier"""
+        """Generate a consistent hash for the product name"""
         return hashlib.md5(product_name.lower().strip().encode()).hexdigest()
     
-    def _check_price_history(self, product_name):
+    def _check_cache(self, product_name):
         """Check if we have cached results for this product"""
         product_id = self._get_product_hash(product_name)
-        # Try to load from file if it exists
         try:
-            with open(f"{product_id}_cache.json", "r") as f:
-                cache_data = json.load(f)
-                logger.info(f"Loaded cached data for {product_name}")
-                return cache_data
+            with open(f"SuperAdvance_IMS/Pythonfiles/cacheitems/{product_id}_cache.json", "r") as f:
+                return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             return None
     
-    def _save_price_history(self, product_name, results):
+    def _load_history(self, product_name):
+        """Load historical price data"""
+        product_id = self._get_product_hash(product_name)
+        try:
+            with open(f"SuperAdvance_IMS/Pythonfiles/cacheitems/{product_id}_history.json", "r") as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Create synthetic history if none exists
+            today = datetime.now()
+            return [{"date": (today - timedelta(days=i)).strftime("%Y-%m-%d"), "price": None} 
+                   for i in range(30, 0, -1)]
+    
+    def _save_cache(self, product_name, results):
         """Save the current price data to cache"""
         product_id = self._get_product_hash(product_name)
         try:
-            # Add timestamp
             results["timestamp"] = time.time()
-            with open(f"{product_id}_cache.json", "w") as f:
+            with open(f"SuperAdvance_IMS/Pythonfiles/cacheitems/{product_id}_cache.json", "w") as f:
                 json.dump(results, f)
-            logger.info(f"Saved results to cache for {product_name}")
+            
+            # Update historical data
+            self._update_history(product_id, results["summary"]["suggested_price"])
         except Exception as e:
             logger.error(f"Failed to save cache: {e}")
     
+    def _update_history(self, product_id, current_price):
+        """Update historical price data with current price"""
+        try:
+            try:
+                with open(f"SuperAdvance_IMS/Pythonfiles/cacheitems/{product_id}_history.json", "r") as f:
+                    history_data = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                history_data = []
+                
+            today = datetime.now().strftime("%Y-%m-%d")
+            
+            # Update or add today's entry
+            today_exists = False
+            for entry in history_data:
+                if entry.get("date") == today:
+                    entry["price"] = current_price
+                    today_exists = True
+                    break
+                    
+            if not today_exists:
+                history_data.append({"date": today, "price": current_price})
+                
+            # Keep only the most recent 30 entries
+            if len(history_data) > 30:
+                history_data = sorted(history_data, key=lambda x: x["date"])[-30:]
+                
+            with open(f"SuperAdvance_IMS/Pythonfiles/cacheitems/{product_id}_history.json", "w") as f:
+                json.dump(history_data, f)
+                
+        except Exception as e:
+            logger.error(f"Failed to update historical data: {e}")
+    
     def scrape_all(self, product_name):
-        """Scrape prices from all sources in parallel"""
+        """Scrape prices from all sources"""
         logger.info(f"Starting price scraping for: {product_name}")
         
-        # Check cache first - if recent results exist (< 24h), use them
-        cached_data = self._check_price_history(product_name)
+        # Check cache first
+        cached_data = self._check_cache(product_name)
         if cached_data and (time.time() - cached_data.get("timestamp", 0)) < 86400:
             logger.info(f"Using cached data for {product_name}")
             return cached_data
         
-        # Define scraping functions to run
-        scrape_functions = [
-            (self.scrape_ebay, product_name),
-            (self.scrape_amazon, product_name),
-            (self.scrape_newegg, product_name),
-            (self.scrape_bestbuy, product_name),
-            (self.scrape_pcexpress, product_name),
-            (self.scrape_microcenter, product_name),
-            (self.scrape_bhphotovideo, product_name)
-        ]
+        # Define sites to scrape - updated list
+        sites = ['ebay', 'amazon', 'microcenter', 'walmart']
         
-        # Use ThreadPoolExecutor to run scraping functions in parallel
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(func, arg) for func, arg in scrape_functions]
-            for future in as_completed(futures):
-                try:
+        try:
+            # Initialize Selenium for Amazon
+            self.initialize_selenium()
+            
+            # Use ThreadPoolExecutor for parallel scraping
+            with ThreadPoolExecutor(max_workers=len(sites)) as executor:
+                futures = [executor.submit(self.scrape_site, site, product_name) for site in sites]
+                for future in as_completed(futures):
                     future.result()
-                except Exception as e:
-                    logger.error(f"Error in thread: {e}")
-        
-        # Add delay between requests to avoid rate limiting
-        time.sleep(random.uniform(1, 3))
-        
-        # Calculate statistics
-        self.calculate_stats()
-        
-        # Calculate per-source suggested prices
-        self.calculate_per_source_suggested_prices()
-        
-        results = {
-            "summary": self.get_suggested_price(),
-            "detailed": self.get_detailed_results()
-        }
-        
-        # Save results to cache
-        self._save_price_history(product_name, results)
-        
-        return results
+            
+            # Calculate statistics and predictions
+            self.calculate_stats()
+            self.calculate_source_prices()
+            self.perform_arima(product_name)
+            
+            results = {
+                "summary": self.get_suggested_price(),
+                "detailed": self.get_detailed_results(),
+                "arima": self.arima_predictions
+            }
+            
+            # Save results to cache
+            self._save_cache(product_name, results)
+            
+            # Clean up Selenium
+            self.close_selenium()
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error in scrape_all: {e}")
+            self.close_selenium()
+            return {"error": str(e)}
     
     def calculate_stats(self):
         """Calculate statistics for the scraped prices"""
@@ -359,23 +401,17 @@ class PriceScraper:
             logger.warning("No prices found to calculate statistics")
             return
         
-        # Calculate statistics
+        # Calculate overall statistics
         self.stats = {
             'count': len(all_prices),
             'min': min(all_prices),
             'max': max(all_prices),
             'mean': statistics.mean(all_prices),
-            'median': statistics.median(all_prices)
+            'median': statistics.median(all_prices),
+            'std_dev': statistics.stdev(all_prices) if len(all_prices) > 1 else 0
         }
-        
-        # Calculate standard deviation if there are enough values
-        if len(all_prices) > 1:
-            self.stats['std_dev'] = statistics.stdev(all_prices)
-        else:
-            self.stats['std_dev'] = 0
             
         # Calculate per-source stats
-        self.source_stats = {}
         for source, prices in self.prices.items():
             if prices:
                 self.source_stats[source] = {
@@ -383,47 +419,119 @@ class PriceScraper:
                     'min': min(prices),
                     'max': max(prices),
                     'mean': statistics.mean(prices),
-                    'median': statistics.median(prices)
+                    'median': statistics.median(prices),
+                    'std_dev': statistics.stdev(prices) if len(prices) > 1 else 0
                 }
-                if len(prices) > 1:
-                    self.source_stats[source]['std_dev'] = statistics.stdev(prices)
-                else:
-                    self.source_stats[source]['std_dev'] = 0
     
-    def calculate_per_source_suggested_prices(self):
+    def calculate_source_prices(self):
         """Calculate suggested price for each source"""
         for source, prices in self.prices.items():
             if not prices:
                 continue
                 
-            # Use at least 3 prices for filtering outliers
-            if len(prices) >= 3:
-                filtered_prices = self.filter_outliers(prices)
-                if not filtered_prices:  # If all filtered out
-                    filtered_prices = prices
-            else:
+            # Filter outliers if enough data
+            filtered_prices = self.filter_outliers(prices) if len(prices) >= 3 else prices
+            if not filtered_prices:
                 filtered_prices = prices
                 
             # Calculate suggested price
             if len(filtered_prices) == 1:
-                # If only one price, use it
                 suggested_price = filtered_prices[0]
             else:
-                # Weight factors - favor median for consistency, add some average to smooth
-                median_weight = 0.7
-                mean_weight = 0.3
-                
+                # Weighted calculation
                 median_price = statistics.median(filtered_prices)
                 mean_price = statistics.mean(filtered_prices)
+                suggested_price = (median_price * 0.7) + (mean_price * 0.3)
                 
-                suggested_price = (median_price * median_weight) + (mean_price * mean_weight)
-                
-            # Add to source suggested prices dict
             self.source_suggested_prices[source] = round(suggested_price, 2)
+    
+    def perform_arima(self, product_name):
+        """Perform ARIMA analysis for price prediction"""
+        try:
+            # Load historical data
+            historical_data = self._load_history(product_name)
+            
+            if not self.stats:
+                logger.warning("No price statistics available for ARIMA analysis")
+                return
+                
+            current_price = self.stats['median']
+            
+            # Check if we have real history or need to generate synthetic data
+            has_real_history = any(entry["price"] is not None for entry in historical_data)
+                
+            if not has_real_history:
+                # Generate synthetic price history
+                base_price = current_price
+                for i, entry in enumerate(historical_data):
+                    day_factor = i / len(historical_data)
+                    seasonal_factor = 0.02 * np.sin(i * (2 * np.pi / 7))
+                    random_factor = 0.05 * (random.random() - 0.5)
+                    synthetic_price = base_price * (1 + day_factor * 0.03 + seasonal_factor + random_factor)
+                    entry["price"] = round(synthetic_price, 2)
+            
+            # Create time series for ARIMA
+            dates = [entry["date"] for entry in historical_data]
+            prices = [entry["price"] for entry in historical_data]
+            
+            # Add current price
+            today = datetime.now().strftime("%Y-%m-%d")
+            if today not in dates:
+                dates.append(today)
+                prices.append(current_price)
+            
+            # Create pandas series
+            price_series = pd.Series(prices, index=pd.DatetimeIndex(dates))
+            
+            # Fit ARIMA model
+            model = ARIMA(price_series, order=(1, 1, 0))
+            model_fit = model.fit()
+            
+            # Forecast next 7 days
+            forecast_steps = 7
+            forecast = model_fit.forecast(steps=forecast_steps)
+            
+            # Prepare forecast results
+            forecast_dates = [(datetime.now() + timedelta(days=i+1)).strftime("%Y-%m-%d") 
+                             for i in range(forecast_steps)]
+            forecast_values = [round(val, 2) for val in forecast.values]
+            
+            # Store predictions
+            self.arima_predictions = {
+                "forecast_dates": forecast_dates,
+                "forecast_values": forecast_values,
+                "historical_dates": dates,
+                "historical_prices": prices
+            }
+            
+            # Calculate price trends
+            if len(forecast_values) >= 2:
+                price_trend = (forecast_values[-1] - forecast_values[0]) / forecast_values[0] * 100
+                
+                self.arima_predictions["price_trend"] = {
+                    "percentage": round(price_trend, 2),
+                    "direction": "up" if price_trend > 0 else "down" if price_trend < 0 else "stable"
+                }
+                
+                # Get recommendation
+                if price_trend > 1:
+                    recommendation = "Buy now before prices increase further"
+                elif price_trend < -1:
+                    min_price_index = forecast_values.index(min(forecast_values))
+                    best_date = forecast_dates[min_price_index]
+                    recommendation = f"Wait until {best_date} for lowest price"
+                else:
+                    recommendation = "Price is stable, buy when convenient"
+                    
+                self.arima_predictions["recommendation"] = recommendation
+            
+        except Exception as e:
+            logger.error(f"Error in ARIMA analysis: {e}")
+            self.arima_predictions = {"error": f"ARIMA analysis failed: {str(e)}"}
     
     def filter_outliers(self, prices):
         """Filter out price outliers using IQR method"""
-        if len(prices) < 4:  # Need enough data for quartiles
+        if len(prices) < 4:
             return prices
             
         q1 = statistics.quantiles(prices, n=4)[0]
@@ -435,104 +543,95 @@ class PriceScraper:
         
         return [price for price in prices if lower_bound <= price <= upper_bound]
     
-    def get_price_range_suggestion(self, min_price, max_price, suggested_price):
-        """Calculate price range suggestions based on market segments"""
-        # Determine price ranges for different market segments
+    def get_price_ranges(self, min_price, max_price, suggested_price):
+        """Calculate price range suggestions"""
         budget_max = min_price + (suggested_price - min_price) * 0.7
         premium_min = max_price - (max_price - suggested_price) * 0.7
         
         return {
-            "budget": {
-                "min": round(min_price, 2),
-                "max": round(budget_max, 2)
-            },
-            "midrange": {
-                "min": round(budget_max, 2),
-                "max": round(premium_min, 2)
-            },
-            "premium": {
-                "min": round(premium_min, 2),
-                "max": round(max_price, 2)
-            }
+            "budget": {"min": round(min_price, 2), "max": round(budget_max, 2)},
+            "midrange": {"min": round(budget_max, 2), "max": round(premium_min, 2)},
+            "premium": {"min": round(premium_min, 2), "max": round(max_price, 2)}
         }
     
     def get_suggested_price(self):
         """Calculate a weighted suggested price"""
-        logger.info("Calculating suggested price...")
-        
-        # Flatten all prices into a single list
+        # Flatten all prices
         all_prices = []
-        for source, prices in self.prices.items():
+        for prices in self.prices.values():
             all_prices.extend(prices)
             
         if not all_prices:
             return {"error": "No prices found to calculate a suggested price"}
             
         # Remove outliers
-        filtered_prices = self.filter_outliers(all_prices)
-        
-        if not filtered_prices:
-            filtered_prices = all_prices  # Fallback if all filtered out
+        filtered_prices = self.filter_outliers(all_prices) or all_prices
             
-        # Calculate weighted average with more weight to specialized electronics retailers
+        # Calculate weighted average
         weights = []
         weighted_prices = []
         
         for source, prices in self.prices.items():
             filtered_source_prices = [p for p in prices if p in filtered_prices]
             if filtered_source_prices:
-                # Assign weights based on source reliability for market prices
-                if source in ['newegg', 'bestbuy', 'pcexpress', 'microcenter', 'bhphotovideo']:
-                    source_weight = 2.5  # Higher weight for specialized electronics retailers
-                elif source in ['ebay', 'amazon']:
-                    source_weight = 2.0  # Good weight for marketplace sites
-                else:
-                    source_weight = 1.0
+                # Assign weights based on source - updated for new list
+                source_weight = 2.5 if source == 'microcenter' else \
+                               2.0 if source in ['ebay', 'amazon'] else \
+                               1.8 if source == 'walmart' else 1.0
                     
                 for price in filtered_source_prices:
                     weighted_prices.append(price)
                     weights.append(source_weight)
         
+        # Calculate final price
         if not weighted_prices:
-            # Fallback to median of all prices
             suggested_price = statistics.median(all_prices)
         else:
-            # Calculate weighted average
             suggested_price = sum(p * w for p, w in zip(weighted_prices, weights)) / sum(weights)
             
-        # Round to 2 decimal places
         suggested_price = round(suggested_price, 2)
         
-        # Get min and max prices after filtering outliers
+        # Get min and max prices
         min_price = min(filtered_prices)
         max_price = max(filtered_prices)
         
-        # Calculate price range suggestions
-        price_ranges = self.get_price_range_suggestion(min_price, max_price, suggested_price)
+        # Calculate price ranges
+        price_ranges = self.get_price_ranges(min_price, max_price, suggested_price)
         
-        # Create summary dictionary
-        summary = {
+        # ARIMA adjustments
+        arima_adjustments = None
+        if self.arima_predictions and "forecast_values" in self.arima_predictions:
+            forecast_prices = self.arima_predictions["forecast_values"]
+            if forecast_prices:
+                avg_forecast = sum(forecast_prices) / len(forecast_prices)
+                arima_adjusted_price = (suggested_price * 0.7) + (avg_forecast * 0.3)
+                
+                arima_adjustments = {
+                    "arima_adjusted_price": round(arima_adjusted_price, 2),
+                    "forecast_range": {
+                        "min": min(forecast_prices),
+                        "max": max(forecast_prices)
+                    },
+                    "forecast_avg": round(avg_forecast, 2)
+                }
+        
+        # Create summary
+        return {
             "suggested_price": suggested_price,
             "total_prices_found": len(all_prices),
             "prices_after_filtering": len(filtered_prices),
-            "price_range": {
-                "min": min_price,
-                "max": max_price
-            },
+            "price_range": {"min": min_price, "max": max_price},
             "suggested_ranges": price_ranges,
             "source_counts": {source: len(prices) for source, prices in self.prices.items() if prices},
-            "source_suggested_prices": self.source_suggested_prices,  # Include per-source price suggestions
-            "confidence": self._calculate_confidence()
+            "source_suggested_prices": self.source_suggested_prices,
+            "confidence": self._calculate_confidence(),
+            "arima_adjustments": arima_adjustments
         }
-        
-        logger.info(f"Suggested price: ${suggested_price}")
-        return summary
     
     def get_detailed_results(self):
-        """Get detailed results broken down by each source"""
+        """Get detailed results by source"""
         detailed_results = {}
         
-        # Add source-specific statistics to the results
         for source, stats in self.source_stats.items():
             if stats['count'] > 0:
                 detailed_results[source] = {
@@ -542,7 +641,7 @@ class PriceScraper:
                     "avg_price": round(stats['mean'], 2),
                     "median_price": round(stats['median'], 2),
                     "std_deviation": round(stats['std_dev'], 2),
-                    "suggested_price": self.source_suggested_prices.get(source, 0),  # Add suggested price for source
+                    "suggested_price": self.source_suggested_prices.get(source, 0),
                     "prices": [round(price, 2) for price in self.prices[source]]
                 }
         
@@ -550,70 +649,21 @@ class PriceScraper:
     
     def _calculate_confidence(self):
         """Calculate confidence level in the suggested price"""
-        # Count sources with data
         sources_with_data = sum(1 for prices in self.prices.values() if prices)
-        
-        # Count total prices
         total_prices = sum(len(prices) for prices in self.prices.values())
         
-        # Enhanced confidence calculation with specialized retailers
-        specialized_retailers = ['newegg', 'bestbuy', 'pcexpress', 'microcenter', 'bhphotovideo']
-        specialized_sources_with_data = sum(1 for source in specialized_retailers if self.prices[source])
+        # Update specialized sources for new list
+        specialized_sources = sum(1 for source in ['microcenter', 'walmart'] if self.prices[source])
         
         if total_prices < 5 or sources_with_data < 2:
             return "Low"
-        elif total_prices >= 15 and sources_with_data >= 4 and specialized_sources_with_data >= 2:
+        elif total_prices >= 20 and sources_with_data >= 3 and specialized_sources >= 1:
             return "High"
         else:
-            return "Medium"   
-
-def main():
-    product_name = input("Enter the product name to search for: ")
-    results = scrapeprice(product_name)
-    
-    # Visualize price distribution if matplotlib is available
-    try:
-        plt.figure(figsize=(10, 6))
-        all_prices = []
-        for source, data in results["detailed"].items():
-            all_prices.extend(data["prices"])
-        
-        plt.hist(all_prices, bins=15, alpha=0.7)
-        plt.axvline(results["summary"]["suggested_price"], color='r', linestyle='dashed', linewidth=2)
-        plt.title(f"Price Distribution for {product_name}")
-        plt.xlabel("Price ($)")
-        plt.ylabel("Frequency")
-        plt.grid(True, alpha=0.3)
-        plt.savefig(f"{product_name.replace(' ', '_')}_price_distribution.png")
-        print(f"\nPrice distribution chart saved as '{product_name.replace(' ', '_')}_price_distribution.png'")
-        
-        # Create per-source price comparison chart
-        if results["summary"].get("source_suggested_prices"):
-            plt.figure(figsize=(12, 6))
-            sources = list(results["summary"]["source_suggested_prices"].keys())
-            prices = list(results["summary"]["source_suggested_prices"].values())
-            
-            # Sort by price for better visualization
-            sorted_data = sorted(zip(sources, prices), key=lambda x: x[1])
-            sources = [x[0] for x in sorted_data]
-            prices = [x[1] for x in sorted_data]
-            
-            plt.bar(sources, prices, color='skyblue')
-            plt.axhline(results["summary"]["suggested_price"], color='r', linestyle='dashed', linewidth=2, 
-                        label=f"Overall Suggested: ${results['summary']['suggested_price']}")
-            
-            plt.title(f"Suggested Price by Source for {product_name}")
-            plt.xlabel("Source")
-            plt.ylabel("Suggested Price ($)")
-            plt.xticks(rotation=45)
-            plt.legend()
-            plt.tight_layout()
-            plt.savefig(f"{product_name.replace(' ', '_')}_source_price_comparison.png")
-            print(f"Source price comparison chart saved as '{product_name.replace(' ', '_')}_source_price_comparison.png'")
-    except Exception as e:
-        logger.warning(f"Could not generate price visualization: {e}")
+            return "Medium"
 
 def scrapeprice(product_name):
+    """Main function to scrape prices and display results"""
     scraper = PriceScraper()
     results = scraper.scrape_all(product_name)
     
@@ -652,12 +702,11 @@ def scrapeprice(product_name):
         print(f"  Standard Deviation: ${data['std_deviation']}")
         print(f"  Individual Prices: {', '.join(['$' + str(p) for p in data['prices']])}")
     
-    # Return all the results
-    return {
-        "summary": summary,
-        "detailed": detailed
-    }
+    return {"summary": summary, "detailed": detailed}
 
-    
+def main():
+    product_name = input("Enter the product name to search for: ")
+    scrapeprice(product_name)
+
 if __name__ == "__main__":
     main()

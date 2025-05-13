@@ -1,0 +1,390 @@
+import requests
+from bs4 import BeautifulSoup
+import re
+import time
+import random
+import logging
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from fake_useragent import UserAgent
+import cloudscraper  # For bypassing Cloudflare protection
+import json
+import http.client
+import urllib.parse
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class AdvancedPriceScraper:
+    def __init__(self):
+        self.ua = UserAgent()
+        self.prices = {'ebay': [], 'amazon': [], 'microcenter': [], 'walmart': []}
+        self.selenium_driver = None
+        self.cloudscraper = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'mobile': False
+            },
+            delay=10
+        )
+        
+    def initialize_selenium(self):
+        """Initialize Selenium WebDriver for JavaScript rendering"""
+        if self.selenium_driver is None:
+            try:
+                chrome_options = Options()
+                chrome_options.add_argument("--headless")
+                chrome_options.add_argument("--no-sandbox")
+                chrome_options.add_argument("--disable-dev-shm-usage")
+                chrome_options.add_argument(f"user-agent={self.ua.random}")
+                chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+                chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+                chrome_options.add_experimental_option('useAutomationExtension', False)
+                
+                service = Service(ChromeDriverManager().install())
+                self.selenium_driver = webdriver.Chrome(service=service, options=chrome_options)
+                
+                # Execute CDP commands to prevent detection
+                self.selenium_driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                    "source": """
+                        Object.defineProperty(navigator, 'webdriver', {
+                            get: () => undefined
+                        });
+                    """
+                })
+                
+                logger.info("Selenium WebDriver initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize Selenium WebDriver: {e}")
+                
+    def close_selenium(self):
+        """Close Selenium WebDriver"""
+        if self.selenium_driver:
+            self.selenium_driver.quit()
+            self.selenium_driver = None
+            
+    def get_headers(self):
+        """Generate random headers to avoid detection"""
+        return {
+            'User-Agent': self.ua.random,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://www.google.com/',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0',
+            'TE': 'Trailers'
+        }
+    
+    def clean_price(self, price_str):
+        """Extract and clean price from string"""
+        if not price_str:
+            return None
+        cleaned = re.sub(r'[^\d.]', '', price_str)
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+    
+    def random_delay(self, min_seconds=2, max_seconds=5):
+        """Add random delay to avoid detection"""
+        delay = random.uniform(min_seconds, max_seconds)
+        time.sleep(delay)
+        return delay
+        
+    def _scrape_ebay(self, product_name, max_items=20):
+        """Scrape prices from eBay using CloudScraper"""
+        try:
+            search_term = product_name.replace(' ', '+')
+            url = f"https://www.ebay.com/sch/i.html?_nkw={search_term}&_sacat=0"
+            
+            # Use cloudscraper instead of regular requests
+            response = self.cloudscraper.get(url, headers=self.get_headers())
+            
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch eBay data: Status code {response.status_code}")
+                return
+                
+            soup = BeautifulSoup(response.text, 'html.parser')
+            items = soup.select('li.s-item')[:max_items]
+            
+            for item in items:
+                price_elem = item.select_one('.s-item__price')
+                if price_elem:
+                    price_text = price_elem.text.strip()
+                    if 'to' not in price_text.lower():
+                        price = self.clean_price(price_text)
+                        if price:
+                            self.prices['ebay'].append(price)
+            
+            logger.info(f"Found {len(self.prices['ebay'])} prices from eBay")
+            
+        except Exception as e:
+            logger.error(f"Error scraping eBay: {e}")
+            
+        self.random_delay()
+    
+    def _scrape_amazon(self, product_name, max_items=20):
+        """Scrape prices from Amazon using Selenium for better anti-bot bypass"""
+        try:
+            self.initialize_selenium()
+            if not self.selenium_driver:
+                logger.error("Selenium WebDriver not available for Amazon scraping")
+                return
+                
+            search_term = product_name.replace(' ', '+')
+            url = f"https://www.amazon.com/s?k={search_term}"
+            
+            self.selenium_driver.get(url)
+            
+            # Wait for price elements to load
+            WebDriverWait(self.selenium_driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".a-price"))
+            )
+            
+            # Extract prices
+            price_elements = self.selenium_driver.find_elements(By.CSS_SELECTOR, '.a-price .a-offscreen')[:max_items]
+            
+            for price_elem in price_elements:
+                price = self.clean_price(price_elem.get_attribute('innerHTML'))
+                if price:
+                    self.prices['amazon'].append(price)
+            
+            logger.info(f"Found {len(self.prices['amazon'])} prices from Amazon")
+            
+        except Exception as e:
+            logger.error(f"Error scraping Amazon: {e}")
+            
+        self.random_delay(3, 6)
+    
+    def _scrape_microcenter(self, product_name, max_items=20):
+        """Scrape prices from Micro Center"""
+        try:
+            search_term = product_name.replace(' ', '+')
+            url = f"https://www.microcenter.com/search/search_results.aspx?N=&cat=&Ntt={search_term}"
+            
+            response = requests.get(url, headers=self.get_headers(), timeout=15)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            product_items = soup.select('.product_wrapper')[:max_items]
+            
+            for item in product_items:
+                price_elem = item.select_one('.price')
+                if price_elem:
+                    price = self.clean_price(price_elem.text.strip())
+                    if price:
+                        self.prices['microcenter'].append(price)
+            
+            logger.info(f"Found {len(self.prices['microcenter'])} prices from Micro Center")
+            
+        except Exception as e:
+            logger.error(f"Error scraping Micro Center: {e}")
+            
+        self.random_delay()
+        
+    def _scrape_walmart(self, product_name, max_items=20):
+        """Scrape prices from Walmart using RapidAPI"""
+        try:
+            logger.info(f"Fetching Walmart prices via API for: {product_name}")
+            
+            # Encode the search keyword for URL
+            encoded_keyword = urllib.parse.quote(product_name)
+            
+            # Set up the connection
+            conn = http.client.HTTPSConnection("realtime-walmart-data.p.rapidapi.com")
+            
+            # API headers
+            headers = {
+                'x-rapidapi-key': "d568155300msh716e81d8be7c8a2p14190ajsn96af85a3334c",
+                'x-rapidapi-host': "realtime-walmart-data.p.rapidapi.com"
+            }
+            
+            # Make the request
+            conn.request("GET", f"/search?keyword={encoded_keyword}&sort=best_match", headers=headers)
+            
+            # Get the response
+            res = conn.getresponse()
+            data = res.read()
+            
+            # Parse the JSON data
+            json_data = json.loads(data.decode("utf-8"))
+            
+            # Check if the request was successful
+            if json_data.get("status") == "success" and "results" in json_data:
+                # Extract product prices
+                count = 0
+                for product in json_data["results"]:
+                    if count >= max_items:
+                        break
+                        
+                    if "price" in product:
+                        price_text = str(product["price"])
+                        price = self.clean_price(price_text)
+                        if price:
+                            self.prices['walmart'].append(price)
+                            count += 1
+                
+                logger.info(f"Found {len(self.prices['walmart'])} prices from Walmart API")
+            else:
+                logger.error(f"Walmart API error: {json_data.get('message', 'Unknown error')}")
+                
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON data from Walmart API: {e}")
+        except KeyError as e:
+            logger.error(f"Missing key in Walmart API data: {e}")
+        except Exception as e:
+            logger.error(f"Error accessing Walmart API: {e}")
+            
+        self.random_delay(2, 4)
+    
+    def scrape_all(self, product_name):
+        """Scrape prices from all sources"""
+        logger.info(f"Starting advanced price scraping for: {product_name}")
+        
+        try:
+            # Define sites to scrape
+            sites = ['ebay', 'amazon', 'microcenter', 'walmart']
+            
+            # Scrape each site sequentially to avoid overwhelming resources
+            for site in sites:
+                logger.info(f"Scraping {site}...")
+                method_name = f"_scrape_{site}"
+                if hasattr(self, method_name):
+                    method = getattr(self, method_name)
+                    method(product_name)
+                else:
+                    logger.warning(f"No scraping method found for {site}")
+            
+            # Calculate statistics
+            self.calculate_stats()
+            
+            # Clean up Selenium
+            self.close_selenium()
+            
+            return {
+                "summary": self.get_summary(),
+                "detailed": self.get_detailed_results()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in scrape_all: {e}")
+            self.close_selenium()
+            return {"error": str(e)}
+    
+    def calculate_stats(self):
+        """Calculate statistics for the scraped prices"""
+        self.stats = {}
+        self.source_stats = {}
+        
+        # Combine all prices
+        all_prices = []
+        for source, prices in self.prices.items():
+            if prices:
+                all_prices.extend(prices)
+                
+                # Calculate per-source stats
+                self.source_stats[source] = {
+                    'count': len(prices),
+                    'min': min(prices),
+                    'max': max(prices),
+                    'mean': sum(prices) / len(prices),
+                    'median': sorted(prices)[len(prices) // 2]
+                }
+        
+        if all_prices:
+            # Calculate overall statistics
+            self.stats = {
+                'count': len(all_prices),
+                'min': min(all_prices),
+                'max': max(all_prices),
+                'mean': sum(all_prices) / len(all_prices),
+                'median': sorted(all_prices)[len(all_prices) // 2]
+            }
+    
+    def get_summary(self):
+        """Get summary of scraped prices"""
+        if not self.stats:
+            return {"error": "No prices found"}
+            
+        return {
+            "total_prices": self.stats['count'],
+            "price_range": {
+                "min": round(self.stats['min'], 2),
+                "max": round(self.stats['max'], 2)
+            },
+            "average_price": round(self.stats['mean'], 2),
+            "median_price": round(self.stats['median'], 2),
+            "sources": {source: len(prices) for source, prices in self.prices.items() if prices}
+        }
+    
+    def get_detailed_results(self):
+        """Get detailed results by source"""
+        detailed_results = {}
+        
+        for source, stats in self.source_stats.items():
+            detailed_results[source] = {
+                "count": stats['count'],
+                "min_price": round(stats['min'], 2),
+                "max_price": round(stats['max'], 2),
+                "avg_price": round(stats['mean'], 2),
+                "median_price": round(stats['median'], 2),
+                "prices": [round(price, 2) for price in self.prices[source]]
+            }
+        
+        return detailed_results
+
+def main():
+    """Main function to demonstrate the advanced price scraper"""
+    product_name = input("Enter the product name to search for: ")
+    scrapeprice(product_name)
+    
+def scrapeprice(product_name):
+    
+    scraper = AdvancedPriceScraper()
+    results = scraper.scrape_all(product_name)
+    
+    print("\n===== PRICE ANALYSIS RESULTS =====")
+    
+    if "error" in results:
+        print(f"Error: {results['error']}")
+        return
+        
+    summary = results["summary"]
+    detailed = results["detailed"]
+    
+    print(f"Product: {product_name}")
+    print(f"Total Prices Found: {summary['total_prices']}")
+    print(f"Price Range: ${summary['price_range']['min']} - ${summary['price_range']['max']}")
+    print(f"Average Price: ${summary['average_price']}")
+    print(f"Median Price: ${summary['median_price']}")
+    
+    print("\n===== PRICES BY SOURCE =====")
+    for source, data in detailed.items():
+        if data["count"] > 0:
+            print(f"\n{source.upper()} (Count: {data['count']})")
+            print(f"  Price Range: ${data['min_price']} - ${data['max_price']}")
+            print(f"  Average Price: ${data['avg_price']}")
+            print(f"  Median Price: ${data['median_price']}")
+            print(f"  Individual Prices: {', '.join(['$' + str(p) for p in data['prices']])}")
+
+    return 
+
+
+
+
+
+
+
+
+
+if __name__ == "__main__":
+    main()

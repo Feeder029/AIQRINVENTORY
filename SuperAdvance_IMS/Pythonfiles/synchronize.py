@@ -3,6 +3,7 @@ from flask_cors import CORS
 import mysql.connector
 import itemqr
 import os
+import ai
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -36,7 +37,7 @@ def get_image_path(item_number, image_url):
     # Format the path according to the specified structure
     return f"http://localhost/AIQRINVENTORY/Advance_IMS/data/item_images/{item_number}/{filename}"
 
-def add_item(item, qrpath, qrcode):
+def add_item(item, qrpath, qrcode,SuggestedPrice,MaxPrice,MinPrice,EbaySP,EbayDetails,MCSPs,MCDetails,AmazonSPs,AmazonDetails,WallmartSP,WallmartDetails):
     """Add item to AI inventory database"""
     try:
         with get_connection('ai_inventory') as conn:
@@ -46,16 +47,21 @@ def add_item(item, qrpath, qrcode):
             image_path = get_image_path(item['itemNumber'], item['imageURL'])
             
             query = """
-                INSERT INTO item (
-                    I_LegacyCode, I_Name, I_Discount, I_UnitPrice, 
-                    I_Status, I_Stock, I_Description, `I_QRCode`, `I_QRPath`, `I_ImagePath`
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             INSERT INTO item (
+              I_LegacyCode, I_Name, I_Discount, I_UnitPrice, 
+              I_Status, I_Stock, I_Description, `I_QRCode`, 
+              `I_QRPath`, `I_ImagePath`, `I_SuggestedPrice`, `I_MaxPriceRange`, 
+              `I_MinPriceRange`, `I_EbaySuggestedPrice`, `I_EbayFullInfo`, `I_MCSuggestedPrice`, 
+              `I_MCFullInfo`, `I_AmazonSuggestedPrice`, `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`
+             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            
+     
             cursor.execute(query, (
-                item['productID'], item['itemName'], item['discount'], 
-                item['unitPrice'], item['status'], item['stock'], 
-                item['description'], qrcode, qrpath, image_path
+                item['productID'], item['itemName'], item['discount'], item['unitPrice'], 
+                item['status'], item['stock'], item['description'], qrcode, 
+                qrpath,image_path,SuggestedPrice,MaxPrice,
+                MinPrice,EbaySP,EbayDetails,MCSPs,
+                MCDetails,AmazonSPs,AmazonDetails, WallmartSP, WallmartDetails
             ))
             
             conn.commit()
@@ -121,7 +127,7 @@ def synchronize_inventory():
         ai_query = """
             SELECT ItemID, I_LegacyCode, I_Name, I_Discount, I_UnitPrice, I_Status, 
                    I_Stock, I_Description, I_QRCode, I_QRPath, I_LastUpdate, 
-                   I_Suggestion, I_SuggestedPrice 
+                   I_SuggestedPrice 
             FROM item
         """
         ai_items = fetch_records(ai_conn, ai_query)
@@ -140,7 +146,44 @@ def synchronize_inventory():
             if legacy_code not in ai_items_dict:
                 # Item doesn't exist in AI inventory - add it
                 qrpath, qrcode = itemqr.generate_qr(legacy_item["itemName"])
-                add_item(legacy_item, qrpath, qrcode)
+                suggestion = ai.scrapeprice(legacy_item["itemName"])
+
+                SuggestedPrice = suggestion['summary']['suggested_price']
+                MinPrice = suggestion['summary']['suggested_ranges']['midrange']['min']
+                MaxPrice = suggestion['summary']['suggested_ranges']['midrange']['max']
+
+
+                AmazonSPs = None
+                EbaySP = None
+                MCSPs = None
+                WallmartSP = None
+                AmazonDetails = ""
+                EbayDetails = ""
+                MCDetails = ""
+                WallmartDetails = ""
+
+
+                
+                for source, data in suggestion['detailed'].items():
+                  if source.upper() == 'EBAY':
+                   EbaySP = data['suggested_price']
+                   EbayDetails = f"Item Count: {data['count']}, Price Range: ${data['min_price']} - ${data['max_price']}, Average Price: ${data['avg_price']}, Median Price: ${data['median_price']}, Standard Deviation: ${data['std_deviation']}"
+                  elif source.upper() == 'MICROCENTER':
+                   MCSPs = data['suggested_price']
+                   MCDetails = f"Item Count: {data['count']}, Price Range: ${data['min_price']} - ${data['max_price']}, Average Price: ${data['avg_price']}, Median Price: ${data['median_price']}, Standard Deviation: ${data['std_deviation']}"
+                  elif source.upper() == 'AMAZON':
+                   AmazonSPs = data['suggested_price']
+                   AmazonDetails = f"Item Count: {data['count']}, Price Range: ${data['min_price']} - ${data['max_price']}, Average Price: ${data['avg_price']}, Median Price: ${data['median_price']}, Standard Deviation: ${data['std_deviation']}"        
+                  elif source.upper() == 'WALMART':
+                   WallmartSP = data['suggested_price']
+                   WallmartDetails  = f"Item Count: {data['count']}, Price Range: ${data['min_price']} - ${data['max_price']}, Average Price: ${data['avg_price']}, Median Price: ${data['median_price']}, Standard Deviation: ${data['std_deviation']}"        
+
+                 
+                print(f"{source.upper()}: ${data['suggested_price']}")
+
+                add_item(legacy_item, qrpath, qrcode,SuggestedPrice,MaxPrice,MinPrice,EbaySP,EbayDetails,MCSPs,MCDetails,AmazonSPs,AmazonDetails,WallmartSP,WallmartDetails)
+
+
                 items_added += 1
             else:
                 # Item exists - check if it needs updating

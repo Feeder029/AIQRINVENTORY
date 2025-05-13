@@ -36,7 +36,7 @@ def GetProducts():
     sql = """
         SELECT `ItemID`, `I_LegacyCode`, `I_Name`, `I_Discount`, `I_UnitPrice`, 
         `I_Image`,`I_ImagePath`,`I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, 
-        `I_QRPath`, `I_LastUpdate`, `I_Suggestion`, `I_SuggestedPrice` FROM `item`
+        `I_QRPath`, `I_LastUpdate` FROM `item`
     """
     
     return GET(sql,"items","I_Image")
@@ -49,7 +49,6 @@ def GetPurchase():
     SELECT 
     `purchaseID`, 
     `I_Image`, 
-    `I_ImagePath`,
     `P_Date`,
     `P_Quantity`, 
     `I_Name`,
@@ -192,6 +191,18 @@ def AddItem():
         ItemUnitPrice = data.get("UnitPrice")
         ItemDiscount = data.get("Discount")
         Image = data.get("Img")  # This should be base64 encoded image data
+        SuggestedPrice = data.get("SP")
+        MaxRange = data.get("Max")
+        MinRange = data.get("Min")
+        EbaySP = data.get("EbaySP")
+        EbayInfo = data.get("EbayInfo")
+        MCSPs = data.get("MCSPs")
+        MCInfo = data.get("MCInfo")
+        AmazonSP = data.get("AmazonSP")
+        AmazonInfo = data.get("AmazonInfo")
+        WalmartSP = data.get("WalmartSP")
+        WalmartInfo = data.get("WalmartInfo")
+
         I_Status = "Active"
 
         # Generate QR code
@@ -232,13 +243,14 @@ def AddItem():
 
         # First insert into ai_inventory database
         query = """
-        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, `I_QRPath`, `I_ImagePath`, `I_Image`) 
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, `I_QRPath`, `I_ImagePath`, `I_Image` , `I_SuggestedPrice`, `I_MaxPriceRange`, `I_MinPriceRange`, `I_EbaySuggestedPrice`, `I_EbayFullInfo`, `I_MCSuggestedPrice`, `I_MCFullInfo`, `I_AmazonSuggestedPrice`, `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`) 
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
 
         cursor.execute(query, (
             ItemName, ItemDiscount, ItemUnitPrice, I_Status,
-            ItemQuantity, ItemDescription, qrcode, qrpath, relative_path, Image
+            ItemQuantity, ItemDescription, qrcode, qrpath, relative_path, Image,
+            SuggestedPrice, MaxRange, MinRange, EbaySP, EbayInfo,MCSPs,MCInfo, AmazonSP, AmazonInfo, WalmartSP, WalmartInfo
         ))
 
         AID = cursor.lastrowid
