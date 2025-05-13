@@ -10,6 +10,8 @@ function displayItems() {
                 console.log("Data: " +item.I_ImagePath)
                 // Process the image path if it exists
                 let imagePath = item.I_ImagePath;
+
+                console.log(item.PriceStatus)
                 
 
                 
@@ -29,12 +31,12 @@ function displayItems() {
                             <p>Stocks: <span>${item.I_Stock}</span></p>
                         </div>
                         <div class="item-icons">
-                            <details class="warning">
+                            <details class="warning ${item.PriceStatus}">
                                 <summary><i class="fa-solid fa-triangle-exclamation"></i></summary>
                                 <div class="warning-details">
                                     <div class="details">
                                         <h2>WARNING!</h2>
-                                        <p>Your price is currently underprice based on data.</p>
+                                        <p>Your price is currently ${item.PriceStatus} based on data.</p>
                                     </div>
                                     <div class="warning-buttons">
                                         <button id="ignore">Ignore</button>

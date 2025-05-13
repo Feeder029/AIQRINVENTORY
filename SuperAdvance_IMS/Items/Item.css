@@ -50,6 +50,10 @@ header {
     border-bottom: 1px solid #eaeaea;
 }
 
+.Fit {
+    display: none;
+}
+
 .logo {
     font-size: 24px;
     font-weight: 700;

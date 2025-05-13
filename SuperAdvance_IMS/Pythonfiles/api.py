@@ -37,9 +37,20 @@ def GetProducts():
     firebaseconnection.syncronize()
 
     sql = """
-        SELECT `ItemID`, `I_LegacyCode`, `I_Name`, `I_Discount`, `I_UnitPrice`, 
-        `I_Image`,`I_ImagePath`,`I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, 
-        `I_QRPath`, `I_LastUpdate` FROM `item`
+    SELECT 
+    `ItemID`, `I_LegacyCode`, `I_MobileCode`, `I_Name`, `I_Discount`, `I_UnitPrice`, 
+    `I_Image`, `I_ImagePath`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`,
+    `I_QRPath`, `I_LastUpdate`, `I_SuggestedPrice`, `I_MaxPriceRange`, `I_MinPriceRange`, 
+    `I_EbaySuggestedPrice`, `I_EbayFullInfo`, `I_MCSuggestedPrice`, `I_MCFullInfo`, 
+    `I_AmazonSuggestedPrice`, `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`,
+    
+    CASE 
+        WHEN `I_UnitPrice` < `I_MinPriceRange` THEN 'Underprice'
+        WHEN `I_UnitPrice` > `I_MaxPriceRange` THEN 'Overprice'
+        ELSE 'Fit'
+    END AS `PriceStatus`
+
+    FROM `item`
     """
     
     return GET(sql,"items","I_Image")
