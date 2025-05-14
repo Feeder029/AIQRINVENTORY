@@ -63,6 +63,7 @@ def GetPurchase():
     SELECT 
     `purchaseID`, 
     `I_Image`, 
+    `I_ImagePath`,
     `P_Date`,
     `P_Quantity`, 
     `I_Name`,
