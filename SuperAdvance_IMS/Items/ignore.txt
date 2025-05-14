@@ -75,7 +75,7 @@
         <div id="Title">ADD ITEM</div>
         <p id="id" hidden></p>
         <img class="editonly" src="../Images/data/Bagish.png" id="itemimg" alt="" style="width: auto; height: 300px; display: block; margin: 0 auto;">
-        <!-- <input type="file"  class="editonly" id="ItemEdit-Img" name="ItemEdit-Img" accept="image/*"> -->
+        <input type="file"  class="editonly" id="ItemEdit-Img" name="Item-Img" accept="image/*">
         <div id="firstaddpage">
         <h4 class="editonly" style="display: none;">Product Name</h4>
         <input type="text" name="ProductName" id="ProductName" placeholder="Enter the Product Name">

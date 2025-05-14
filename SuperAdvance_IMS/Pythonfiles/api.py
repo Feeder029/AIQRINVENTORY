@@ -34,7 +34,7 @@ def get_connection2():
 @app.route('/api/displayitems', methods=['GET'])
 def GetProducts():
     synchronize.synchronize_inventory()
-    firebaseconnection.syncronize()
+    # firebaseconnection.syncronize()
 
     sql = """
     SELECT 
@@ -116,6 +116,47 @@ def GetVendors():
          """
     return GET(sql,"vendor")
 
+@app.route('/api/updateitems', methods=['POST'])
+def UpdateItem():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        data = request.json
+        ItemID = data.get("ID")
+        ItemName = data.get("Name")
+        ItemDescription = data.get("Desc")
+        ItemQuantity = data.get("Quantity")
+        ItemUnitPrice = data.get("UnitPrice")
+        ItemDiscount = data.get("Discount")
+        
+        query = """
+        UPDATE `item` SET `I_Name`= %s, `I_Discount`= %s, `I_UnitPrice`= %s,
+        `I_Stock`= %s, `I_Description`= %s WHERE `ItemID`= %s
+        """
+        values = (ItemName, ItemDiscount, ItemUnitPrice, ItemQuantity, ItemDescription, ItemID)
+        
+        # Execute the update query
+        cursor.execute(query, values)
+        conn.commit()  # Important: commit changes to database
+        
+        # Optional: print formatted query (for debugging)
+        formatted_query = query % tuple(repr(v) for v in values)
+        print(formatted_query)
+
+        return jsonify({
+            "status": "success",
+            "message": "Item updated successfully."
+        })
+
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+        return jsonify({"status": "error", "message": str(err)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals() and conn.is_connected():
+            conn.close()
+            
 # Function to get the datas from ai_inventory base on given statements
 def GET(statement,dataname,Image=None):
     try:
@@ -324,6 +365,9 @@ def AddItem():
         if 'conn2' in locals() and conn2.is_connected():
             cursor2.close()
             conn2.close()
+
+
+
 
 @app.route('/api/getsales', methods=['POST'])
 def InputItems():

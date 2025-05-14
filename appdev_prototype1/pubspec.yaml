@@ -40,6 +40,13 @@ dependencies:
   path: ^1.8.3
   image_picker: ^1.0.0
   shared_preferences: ^2.2.0
+  cloud_firestore: ^4.0.0 # or latest
+  firebase_core: ^2.0.0
+  firebase_auth: ^4.0.0 # if implementing auth
+  firebase_storage: ^11.0.0
+  qr_flutter: ^4.0.0
+  path_provider: ^2.0.0
+  # permission_handler: ^10.0.0
 
 dev_dependencies:
   flutter_test:
