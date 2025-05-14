@@ -39,7 +39,7 @@ function displayItems() {
                     "Quantity" : item.I_Stock,
                     "Discount" : item.I_Discount,
                     "imagePath" : imagePath,
-                    "I_ID" : item.ItemID
+                    "L_ID" : item.I_LegacyCode
                 });
 
                 
@@ -238,6 +238,8 @@ function SaveItems() {
 }
 
 
+
+
 function EmptyAddItem(){
 
    // Show all elements with class 'editonly'
@@ -291,7 +293,7 @@ function EditAddItem(itemData){
   document.getElementById("itemimg").src = itemData.imagePath;
 
   document.getElementById('Title').textContent = 'EDIT ITEM';
-  document.getElementById('id').textContent = itemData.I_ID;
+  document.getElementById('id').textContent = itemData.L_ID;
   document.getElementById('UnitLabel').textContent = `Unit Price | Suggested Price: $${itemData.SuggestedPrice} ($${itemData.MaxPriceRange} - $${itemData.MinPriceRange})`;
 
   // Fill in the form with the item data
@@ -324,57 +326,89 @@ function EditAddItem(itemData){
 
   document.getElementById('pricesuggestion').innerHTML = display;
 }
+let a = "";
+function EditItems() {
+    // Get file input element
+    const fileInput = document.getElementById('Item-Img');
+    let base64String = "";
 
-function EditItems(){
-    
-    const itemData = {
-        ID: document.getElementById('id').textContent,
-        Name: document.getElementById('ProductName').value,
-        Desc: document.getElementById('Description').value,
-        Quantity: parseInt(document.getElementById('Quantity').value),
-        UnitPrice: parseFloat(document.getElementById('UnitPriceEdit').value),
-        Discount: parseFloat(document.getElementById('Discount').value),
+    if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            base64String = event.target.result; // base64 data with metadata
+            console.log("Part 1: " + base64String);
+
+            // Build itemData inside the callback (image loaded)
+            const itemData = {
+                ID: document.getElementById('id').textContent,
+                Name: document.getElementById('ProductName').value,
+                Desc: document.getElementById('Description').value,
+                Quantity: parseInt(document.getElementById('Quantity').value),
+                UnitPrice: parseFloat(document.getElementById('UnitPriceEdit').value),
+                Discount: parseFloat(document.getElementById('Discount').value),
+                IMG: base64String // optional: set only if image exists
+            };
+
+            // Send data inside the callback
+            sendData(itemData);
+        };
+
+        reader.readAsDataURL(file);
+    } else {
+        // No image selected, proceed without it
+        const itemData = {
+            ID: document.getElementById('id').textContent,
+            Name: document.getElementById('ProductName').value,
+            Desc: document.getElementById('Description').value,
+            Quantity: parseInt(document.getElementById('Quantity').value),
+            UnitPrice: parseFloat(document.getElementById('UnitPriceEdit').value),
+            Discount: parseFloat(document.getElementById('Discount').value),
+            IMG: null // or omit this property if desired
+        };
+
+        sendData(itemData);
     }
 
-    document.getElementById('AddItem').hidePopover();
+    function sendData(itemData) {
+        console.log("Sending update data:", itemData);
+        document.getElementById('AddItem').hidePopover();
 
-    fetch("http://localhost:5000/api/updateitems", {
-        method: "POST",
+        Swal.fire({
+            title: 'Updating...',
+            text: 'Please wait while we update the item',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch("http://localhost:5000/api/itemupdate", {
+            method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-                        body: JSON.stringify(itemData)
-            })
-                .then(response => response.json())
-                .then(data => {
-
-                    if (data.status === "success") {
-
-                        // Success message using SweetAlert
-                        Swal.fire(
-                                'Saved!',
-                                'Item has been saved successfully.',
-                                'success'
-                        );
-                            // Optionally refresh the items display
-                            displayItems();
-                        } else {
-                            // Error message using SweetAlert
-                            Swal.fire(
-                                'Error!',
-                                'Failed to save item: ' + data.message,
-                        'error'
-                    );
+            body: JSON.stringify(itemData)
+        })
+        .then(response => {
+            console.log("Response status:", response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log("Update response:", data);
+            if (data.status === "success") {
+                Swal.fire('Saved!', 'Item has been saved successfully.', 'success');
+                displayItems();
+            } else {
+                Swal.fire('Error!', 'Failed to save item: ' + data.message, 'error');
             }
         })
         .catch(error => {
             console.error("Access Error:", error);
-        Swal.fire(
-            'Error!',
-            'Error saving item: ' + error.message,
-            'error'
-        );
-    });
+            Swal.fire('Error!', 'Error saving item: ' + error.message, 'error');
+        });
+    }
 }
 
 // Frontend JavaScript Fix

@@ -34,7 +34,7 @@ def get_connection2():
 @app.route('/api/displayitems', methods=['GET'])
 def GetProducts():
     synchronize.synchronize_inventory()
-    # firebaseconnection.syncronize()
+    firebaseconnection.syncronize()
 
     sql = """
     SELECT 
@@ -116,47 +116,6 @@ def GetVendors():
          """
     return GET(sql,"vendor")
 
-@app.route('/api/updateitems', methods=['POST'])
-def UpdateItem():
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        data = request.json
-        ItemID = data.get("ID")
-        ItemName = data.get("Name")
-        ItemDescription = data.get("Desc")
-        ItemQuantity = data.get("Quantity")
-        ItemUnitPrice = data.get("UnitPrice")
-        ItemDiscount = data.get("Discount")
-        
-        query = """
-        UPDATE `item` SET `I_Name`= %s, `I_Discount`= %s, `I_UnitPrice`= %s,
-        `I_Stock`= %s, `I_Description`= %s WHERE `ItemID`= %s
-        """
-        values = (ItemName, ItemDiscount, ItemUnitPrice, ItemQuantity, ItemDescription, ItemID)
-        
-        # Execute the update query
-        cursor.execute(query, values)
-        conn.commit()  # Important: commit changes to database
-        
-        # Optional: print formatted query (for debugging)
-        formatted_query = query % tuple(repr(v) for v in values)
-        print(formatted_query)
-
-        return jsonify({
-            "status": "success",
-            "message": "Item updated successfully."
-        })
-
-    except mysql.connector.Error as err:
-        print(f"Database Error: {err}")
-        return jsonify({"status": "error", "message": str(err)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals() and conn.is_connected():
-            conn.close()
-            
 # Function to get the datas from ai_inventory base on given statements
 def GET(statement,dataname,Image=None):
     try:
@@ -366,9 +325,6 @@ def AddItem():
             cursor2.close()
             conn2.close()
 
-
-
-
 @app.route('/api/getsales', methods=['POST'])
 def InputItems():
     if request.method == 'POST':
@@ -483,6 +439,121 @@ def GetPrice():
      logging.error(f"Error in price analysis: {str(e)}", exc_info=True)
     
     return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/api/itemupdate', methods=['POST'])
+def ItemUpdate():
+    try:
+        conn = get_connection()
+        conn2 = get_connection2()
+        cursor = conn.cursor()
+        cursor2 = conn2.cursor()
+
+        data = request.json
+        ItemID = data.get("ID")
+        ItemName = data.get("Name")
+        ItemDescription = data.get("Desc")
+        ItemQuantity = data.get("Quantity")
+        ItemUnitPrice = data.get("UnitPrice")
+        ItemDiscount = data.get("Discount")
+        Image = data.get("IMG")  
+
+        print("IMAGE: " +Image)
+        if Image:
+            # Create uploads directory if it doesn't exist
+            upload_folder = "SuperAdvance_IMS/Images/data"
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            # Create a safe filename from ItemName
+            safe_item_name = ''.join(c if c.isalnum() or c in ['-', '_'] else '_' for c in ItemName)
+            filename = f"{safe_item_name}.png"
+            
+            # Full path to save the image
+            image_path = os.path.join(upload_folder, filename)
+            
+            # Decode base64 image and save it
+            try:
+                # Remove the base64 header if present
+                if "," in Image:
+                    Image = Image.split(",")[1]
+                
+                # Decode and save the image
+                with open(image_path, "wb") as img_file:
+                    img_file.write(base64.b64decode(Image))
+                
+                # Get relative path to store in database
+                relative_path = os.path.join("http://localhost/AIQRINVENTORY/SuperAdvance_IMS/Images/data/", filename)
+                print(f"Image saved at: {image_path}")
+            except Exception as img_err:
+                print(f"Error saving image: {img_err}")
+                relative_path = None
+        else:
+            relative_path = None
+            print("No image provided")
+
+
+        legacy_query = """
+        UPDATE `item` SET `itemName`= %s,`discount`= %s,`stock`= %s,`unitPrice`= %s,`description`= %s 
+        WHERE `productID`= %s
+        """
+
+        print(relative_path)
+
+        cursor2.execute(legacy_query,(
+            ItemName,
+            ItemDiscount,
+            ItemQuantity,
+            ItemUnitPrice,
+            ItemDescription,
+            ItemID
+        ))
+
+
+        query = """
+        UPDATE `item` SET `I_Name`= %s, `I_Discount`= %s, `I_UnitPrice`= %s,
+        `I_Stock`= %s, `I_Description`= %s WHERE `I_LegacyCode`= %s
+        """
+
+        cursor.execute(query,(
+            ItemName,
+            ItemDiscount,
+            ItemUnitPrice,
+            ItemQuantity,
+            ItemDescription,
+            ItemID
+        ))
+
+        if(relative_path!=None):
+
+            print("Here: " + relative_path)
+
+            imgquery = """
+             UPDATE `item` SET `I_ImagePath` = %s WHERE `I_LegacyCode` = %s
+             """
+
+            cursor.execute(imgquery,(
+              relative_path,ItemID
+            ))
+
+            conn2.commit()
+            conn.commit()
+            print(f"{ItemID} Successfully Update")
+
+        return jsonify({
+            "status": "success",
+            "message": "Item updated successfully."
+        })
+
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+        return jsonify({"status": "error", "message": str(err)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals() and conn.is_connected():
+            conn.close()         
+
+
 
 # Run the application
 if __name__ == '__main__':

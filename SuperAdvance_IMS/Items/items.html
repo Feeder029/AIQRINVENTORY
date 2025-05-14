@@ -74,9 +74,10 @@
 
         <div id="Title">ADD ITEM</div>
         <p id="id" hidden></p>
-        <img class="editonly" src="../Images/data/Bagish.png" id="itemimg" alt="" style="width: auto; height: 300px; display: block; margin: 0 auto;">
         <!-- <input type="file"  class="editonly" id="ItemEdit-Img" name="ItemEdit-Img" accept="image/*"> -->
         <div id="firstaddpage">
+        <img class="editonly" src="../Images/data/Bagish.png" id="itemimg" alt="" style="width: auto; height: 300px; display: block; margin: 0 auto;">
+        <input type="file" id="Item-Img" name="Item-Img" accept="image/*">
         <h4 class="editonly" style="display: none;">Product Name</h4>
         <input type="text" name="ProductName" id="ProductName" placeholder="Enter the Product Name">
         <h4 class="editonly" style="display: none;">Description</h4>
@@ -88,7 +89,6 @@
         <h4 class="editonly" id="UnitLabel" style="display: none;">Unit Price</h4>
         <input type="text" class="editonly" name="UnitPriceEdit" id="UnitPriceEdit" placeholder="Enter the Unit Price" style="display: none;">
         <h5 class="editonly editalert">  </h5>
-        <input type="file" class="addonly" id="Item-Img" name="Item-Img" accept="image/*">
         <button id="nextprice" class="addonly" onclick="Next()">NEXT</button>
         <button id="saveaddproduct" onclick="EditItems()" class="editonly" style="display: none;">EDIT</button>
         </div>
