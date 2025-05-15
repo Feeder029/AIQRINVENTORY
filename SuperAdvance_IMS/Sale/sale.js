@@ -157,6 +157,7 @@ function DropdownOptions() {
         newOption.innerHTML = `
         <img src="${imageDisplay}" id="picture_dropdown" alt="${item.I_Name}" />
         <div class="details">
+        <div class="mobilecode" hidden>${item.I_MobileCode}</div>
         <div class="legacycode" hidden>${item.I_LegacyCode}</div>
         <div class="itemname">${item.I_Name}</div>
         <div class="itemstock">Stock: ${item.I_Stock}</div>
@@ -275,6 +276,7 @@ function Sale() {
   // Get the selected item name from the dropdown
   const selectedItemName = document.querySelector('.dropdown-selected .itemname').textContent;
   const legacycode = document.querySelector('.dropdown-selected .legacycode').textContent;
+  const mobilecode = document.querySelector('.dropdown-selected .mobilecode').textContent;
   const stock = document.querySelector('.dropdown-selected .itemstock').textContent;
   const LegacyCustomerID = document.getElementById("customer").options[document.getElementById("customer").selectedIndex].getAttribute("legacy");
 
@@ -299,7 +301,8 @@ function Sale() {
     ItemName: selectedItemName,
     legacycode: legacycode,
     CustomerName: customername,
-    LegacyCustomerID: LegacyCustomerID
+    LegacyCustomerID: LegacyCustomerID,
+    mobilecode: mobilecode
   };
 
     fetch("http://localhost:5000/api/addnewsale", {

@@ -40,7 +40,8 @@ function displayItems() {
                     "Discount" : item.I_Discount,
                     "imagePath" : imagePath,
                     "L_ID" : item.I_LegacyCode,
-                    "QRPath": item.I_QRPath
+                    "QRPath": item.I_QRPath,
+                    "Mobile": item.I_MobileCode
                 });
 
                 
@@ -302,7 +303,8 @@ function EditAddItem(itemData){
   document.getElementById('Description').value = itemData.Description;
   document.getElementById('Quantity').value = itemData.Quantity;
   document.getElementById('Discount').value = itemData.Discount;
-  
+  document.getElementById('MobileCode').value = itemData.Mobile;
+
   const unitPriceEdit = document.getElementById('UnitPriceEdit');
   unitPriceEdit.value = itemData.UnitPrice;
   
@@ -342,6 +344,8 @@ function EditItems() {
     const fileInput = document.getElementById('Item-Img');
     let base64String = "";
 
+    
+
     if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
         const reader = new FileReader();
@@ -358,7 +362,8 @@ function EditItems() {
                 Quantity: parseInt(document.getElementById('Quantity').value),
                 UnitPrice: parseFloat(document.getElementById('UnitPriceEdit').value),
                 Discount: parseFloat(document.getElementById('Discount').value),
-                IMG: base64String // optional: set only if image exists
+                IMG: base64String, // optional: set only if image exists
+                Mobile: document.getElementById('MobileCode').value
             };
 
             // Send data inside the callback
@@ -375,7 +380,8 @@ function EditItems() {
             Quantity: parseInt(document.getElementById('Quantity').value),
             UnitPrice: parseFloat(document.getElementById('UnitPriceEdit').value),
             Discount: parseFloat(document.getElementById('Discount').value),
-            IMG: null // or omit this property if desired
+            IMG: null ,// or omit this property if desired
+            Mobile: document.getElementById('MobileCode').value
         };
 
         sendData(itemData);

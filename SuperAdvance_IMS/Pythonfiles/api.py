@@ -361,6 +361,7 @@ def AddNewSale():
         LegacyCode = data.get('legacycode')
         LegacyCustomer = data.get('LegacyCustomerID')
         CustomerName = data.get('CustomerName')
+        mobilecode = data.get('mobilecode')
 
 
         aiquery = """
@@ -420,6 +421,12 @@ def AddNewSale():
         )
 
         cursor2.execute(updatelegacyquery, updatelegacyinput)
+
+        quantity = "-"+quantity
+
+        success, message = firebaseconnection.update_quantity(ID=mobilecode, quantity_change=quantity)
+
+        print(message)
 
 
         conn2.commit()
@@ -563,6 +570,7 @@ def ItemUpdate():
         ItemUnitPrice = data.get("UnitPrice")
         ItemDiscount = data.get("Discount")
         Image = data.get("IMG")  
+        MobileCode = data.get("Mobile")  
 
         # Use the ImageHandler function for image processing
         relative_path = ImageHandler(Image, ItemName)
@@ -614,6 +622,9 @@ def ItemUpdate():
         conn.commit()
         print(f"{ItemID} Successfully Updated")
 
+        success,message = firebaseconnection.update_product(MobileCode, ItemName, ItemDescription, ItemUnitPrice, ItemQuantity, URL=None)
+        print(message)
+
         # Update firebase (if needed)
         # Add firebaseconnection.updateproduct call here if needed
 
@@ -621,6 +632,7 @@ def ItemUpdate():
             "status": "success",
             "message": "Item updated successfully."
         })
+    
 
     except mysql.connector.Error as err:
         if conn:
