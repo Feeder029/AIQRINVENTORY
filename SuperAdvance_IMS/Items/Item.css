@@ -676,10 +676,12 @@ label {
     padding: 30px;
     width: 800px;
     max-width: 90%;
+    height: 76%;
     
-    position: absolute;
-    left: 50%; /* Centers horizontally */
-    transform: translateX(-50%); /* Adjusts the horizontal position */
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
 }
 
   #Title {
