@@ -59,7 +59,7 @@ def add_item(item, qrpath, qrcode,SuggestedPrice,MaxPrice,MinPrice,EbaySP,EbayDe
              ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
 
-            MobileID = f"L{item['productID']}"
+            MobileID = f"L{item['itemNumber']}"
 
             cursor.execute(query, (
                 item['itemNumber'],MobileID,item['itemName'], item['discount'], item['unitPrice'], 
@@ -73,7 +73,7 @@ def add_item(item, qrpath, qrcode,SuggestedPrice,MaxPrice,MinPrice,EbaySP,EbayDe
 
             print(f"Item {item['productID']} successfully inserted")
         
-        MobileID = f"L{item['productID']}"
+        MobileID = f"L{item['itemNumber']}"
         firebaseconnection.newproduct(MobileID,item['itemName'],item['description'],item['unitPrice'],item['stock'],image_path)
 
     except mysql.connector.Error as err:
