@@ -190,14 +190,56 @@ def GET(statement,dataname,Image=None):
             cursor.close()
             conn.close()
 
+
+def POST(conn, statement, inputs):
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(statement, inputs)
+    ID = cursor.lastrowid
+    conn.commit()
+    return ID  # Return just the ID, not the cursor and ID
+
+def ImageHandler(Image, ItemName):
+    # Save the image to a folder
+    relative_path = None
+    if Image:
+        # Create uploads directory if it doesn't exist
+        upload_folder = "SuperAdvance_IMS/Images/data"
+        os.makedirs(upload_folder, exist_ok=True)
+            
+        # Create a safe filename from ItemName
+        safe_item_name = ''.join(c if c.isalnum() or c in ['-', '_'] else '_' for c in ItemName)
+        filename = f"{safe_item_name}.png"
+            
+        # Full path to save the image
+        image_path = os.path.join(upload_folder, filename)
+            
+        # Decode base64 image and save it
+        try:
+            # Remove the base64 header if present
+            if "," in Image:
+                Image = Image.split(",")[1]
+                
+            # Decode and save the image
+            with open(image_path, "wb") as img_file:
+                img_file.write(base64.b64decode(Image))
+                
+            # Get relative path to store in database
+            relative_path = os.path.join("http://localhost/AIQRINVENTORY/SuperAdvance_IMS/Images/data/", filename)
+            print(f"Image saved at: {image_path}")
+        except Exception as img_err:
+            print(f"Error saving image: {img_err}")
+    else:
+        print("No image provided")  # Fixed indentation
+    
+    return relative_path
+
+
 @app.route('/api/insertitems', methods=['POST'])
-def AddItem():
+def AddNewItem():
+    conn = None
     try:
         conn = get_connection()
-        conn2 = get_connection2()
-
-        cursor = conn.cursor(dictionary=True)
-        cursor2 = conn2.cursor(dictionary=True)
+        conn2 = get_connection2() 
 
         data = request.json
         ItemName = data.get("Name")
@@ -220,110 +262,177 @@ def AddItem():
 
         I_Status = "Active"
 
-        # Generate QR code
         qrpath, qrcode = itemqr.generate_qr(ItemName)
 
-        # Save the image to a folder
-        if Image:
-            # Create uploads directory if it doesn't exist
-            upload_folder = "SuperAdvance_IMS/Images/data"
-            os.makedirs(upload_folder, exist_ok=True)
-            
-            # Create a safe filename from ItemName
-            safe_item_name = ''.join(c if c.isalnum() or c in ['-', '_'] else '_' for c in ItemName)
-            filename = f"{safe_item_name}.png"
-            
-            # Full path to save the image
-            image_path = os.path.join(upload_folder, filename)
-            
-            # Decode base64 image and save it
-            try:
-                # Remove the base64 header if present
-                if "," in Image:
-                    Image = Image.split(",")[1]
-                
-                # Decode and save the image
-                with open(image_path, "wb") as img_file:
-                    img_file.write(base64.b64decode(Image))
-                
-                # Get relative path to store in database
-                relative_path = os.path.join("http://localhost/AIQRINVENTORY/SuperAdvance_IMS/Images/data/", filename)
-                print(f"Image saved at: {image_path}")
-            except Exception as img_err:
-                print(f"Error saving image: {img_err}")
-                relative_path = None
-        else:
-            relative_path = None
-            print("No image provided")
+        # Process image
+        relative_path = ImageHandler(Image, ItemName)  # Fixed missing ItemName parameter
 
-        # First insert into ai_inventory database
         query = """
-        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, `I_QRPath`, `I_ImagePath`, `I_Image` , `I_SuggestedPrice`, `I_MaxPriceRange`, `I_MinPriceRange`, `I_EbaySuggestedPrice`, `I_EbayFullInfo`, `I_MCSuggestedPrice`, `I_MCFullInfo`, `I_AmazonSuggestedPrice`, `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`) 
+        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, `I_QRPath`, `I_ImagePath`, `I_Image`, `I_SuggestedPrice`, `I_MaxPriceRange`, `I_MinPriceRange`, `I_EbaySuggestedPrice`, `I_EbayFullInfo`, `I_MCSuggestedPrice`, `I_MCFullInfo`, `I_AmazonSuggestedPrice`, `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`) 
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
-
-        cursor.execute(query, (
-            ItemName, ItemDiscount, ItemUnitPrice, I_Status,
+        
+        inputs = (ItemName, ItemDiscount, ItemUnitPrice, I_Status,
             ItemQuantity, ItemDescription, qrcode, qrpath, relative_path, Image,
-            SuggestedPrice, MaxRange, MinRange, EbaySP, EbayInfo,MCSPs,MCInfo, AmazonSP, AmazonInfo, WalmartSP, WalmartInfo
+            SuggestedPrice, MaxRange, MinRange, EbaySP, EbayInfo, MCSPs, MCInfo, 
+            AmazonSP, AmazonInfo, WalmartSP, WalmartInfo)
+            
+        # Execute the query
+        AIID = POST(conn, query, inputs)
+        
+        # Calculate ItemNumber for legacy system
+        ItemNumber = AIID + 1000
+
+        # Fixed legacyquery with correct number of placeholders
+        legacyquery = """
+        INSERT INTO `item`(`itemNumber`, `itemName`, `discount`, `stock`, `unitPrice`,`imageURL`,`status`, `description`)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """
+
+        # Adjust legacy inputs to match parameters
+        legacyinputs = (
+            ItemNumber, ItemName, ItemDiscount, ItemQuantity, ItemUnitPrice, 
+            relative_path, I_Status, ItemDescription          
+        )
+
+        # Insert into legacy database
+        LID = POST(conn2, legacyquery, legacyinputs)  # Using conn2 for legacy database
+
+        # Generate WebID
+        WebID = f"W{AIID}"
+
+        # Update the main record with codes
+        updatequery = """
+        UPDATE `item` SET `I_LegacyCode`= %s,`I_MobileCode`= %s WHERE `ItemID`= %s      
+        """
+
+        updateinput = (
+            LID, WebID, AIID
+        )
+        
+        # Execute update query
+        cursor = conn.cursor()
+        cursor.execute(updatequery, updateinput)
+        conn.commit()
+
+        firebaseconnection.newproduct(WebID,ItemName,ItemDescription,ItemUnitPrice,ItemQuantity,relative_path)
+
+        # Return success response
+        return jsonify({"status": "success", "message": "Item added successfully"}), 200
+    
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        print(f"Database Error: {err}")
+        return jsonify({"status": "error", "message": str(err)}), 500
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+@app.route('/api/itemupdate', methods=['POST'])
+def ItemUpdate():
+    conn = None
+    conn2 = None
+    try:
+        conn = get_connection()
+        conn2 = get_connection2()
+
+        data = request.json
+        ItemID = data.get("ID")
+        ItemName = data.get("Name")
+        ItemDescription = data.get("Desc")
+        ItemQuantity = data.get("Quantity")
+        ItemUnitPrice = data.get("UnitPrice")
+        ItemDiscount = data.get("Discount")
+        Image = data.get("IMG")  
+
+        # Use the ImageHandler function for image processing
+        relative_path = ImageHandler(Image, ItemName)
+
+        # Update in legacy database
+        legacy_query = """
+        UPDATE `item` SET `itemName`= %s,`discount`= %s,`stock`= %s,`unitPrice`= %s,`description`= %s 
+        WHERE `productID`= %s
+        """
+
+        # Using traditional execution since POST is for INSERT operations
+        cursor2 = conn2.cursor()
+        cursor2.execute(legacy_query, (
+            ItemName,
+            ItemDiscount,
+            ItemQuantity,
+            ItemUnitPrice,
+            ItemDescription,
+            ItemID
+        ))
+        conn2.commit()
+
+        # Update in main database
+        query = """
+        UPDATE `item` SET `I_Name`= %s, `I_Discount`= %s, `I_UnitPrice`= %s,
+        `I_Stock`= %s, `I_Description`= %s WHERE `I_LegacyCode`= %s
+        """
+
+        cursor = conn.cursor()
+        cursor.execute(query, (
+            ItemName,
+            ItemDiscount,
+            ItemUnitPrice,
+            ItemQuantity,
+            ItemDescription,
+            ItemID
         ))
 
-        AID = cursor.lastrowid
-        ItemNumber = AID + 1000
-        
-        # Use the saved image path for the second database too
-        Path = relative_path if relative_path else "null"
-
-        # Try to insert into shop_inventory database
-        try:
-            lquery = """
-            INSERT INTO `item`(`itemNumber`, `itemName`, `discount`, `stock`, `unitPrice`,`imageURL`,`status`, `description`)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        # Update image path if available
+        if relative_path is not None:
+            imgquery = """
+            UPDATE `item` SET `I_ImagePath` = %s, `I_Image` = %s WHERE `I_LegacyCode` = %s
             """
-            cursor2.execute(lquery, (
-                ItemNumber, ItemName, ItemDiscount, ItemQuantity, ItemUnitPrice, Path, I_Status, ItemDescription
-            ))
-            
-            LID = cursor2.lastrowid
-            
-            WebID = f"W{AID}"
 
-            # Update the first database with the legacy ID
-            update = """
-            UPDATE `item` SET `I_LegacyCode`= %s,`I_MobileCode`= %s WHERE `ItemID`= %s      
-            """
-            cursor.execute(update, (
-                LID, WebID, AID
+            cursor.execute(imgquery, (
+                relative_path, Image, ItemID
             ))
-            
-            conn.commit()
-            conn2.commit()  # Make sure to commit the second connection too
-            
-            firebaseconnection.newproduct(WebID,ItemName,ItemDescription,ItemUnitPrice,ItemQuantity,relative_path)
-            
-            return jsonify({
-                "status": "success", 
-                "message": "Item added successfully to both databases.",
-                "image_path": relative_path
-            })
-            
-            
 
-        except mysql.connector.Error as err2:
-            # If second insert fails, rollback first insert
-            conn.rollback()
-            print(f"Second Database Error: {err2}")
-            return jsonify({"status": "error", "message": f"First database insert succeeded, but second failed: {str(err2)}"}), 500
-        
+        # Commit changes
+        conn.commit()
+        print(f"{ItemID} Successfully Updated")
+
+        # Update firebase (if needed)
+        # Add firebaseconnection.updateproduct call here if needed
+
+        return jsonify({
+            "status": "success",
+            "message": "Item updated successfully."
+        })
+
     except mysql.connector.Error as err:
-        print(f"First Database Error: {err}")
+        if conn:
+            conn.rollback()
+        if conn2:
+            conn2.rollback()
+        print(f"Database Error: {err}")
         return jsonify({"status": "error", "message": str(err)}), 500
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        if conn2:
+            conn2.rollback()
+        print(f"Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
     finally:
-        if 'conn' in locals() and conn.is_connected():
+        if 'cursor' in locals() and cursor:
             cursor.close()
-            conn.close()
-        if 'conn2' in locals() and conn2.is_connected():
+        if 'cursor2' in locals() and cursor2:
             cursor2.close()
+        if conn and conn.is_connected():
+            conn.close()
+        if conn2 and conn2.is_connected():
             conn2.close()
 
 @app.route('/api/getsales', methods=['POST'])
@@ -441,118 +550,6 @@ def GetPrice():
     
     return jsonify({'success': False, 'message': str(e)})
 
-
-@app.route('/api/itemupdate', methods=['POST'])
-def ItemUpdate():
-    try:
-        conn = get_connection()
-        conn2 = get_connection2()
-        cursor = conn.cursor()
-        cursor2 = conn2.cursor()
-
-        data = request.json
-        ItemID = data.get("ID")
-        ItemName = data.get("Name")
-        ItemDescription = data.get("Desc")
-        ItemQuantity = data.get("Quantity")
-        ItemUnitPrice = data.get("UnitPrice")
-        ItemDiscount = data.get("Discount")
-        Image = data.get("IMG")  
-
-        print("IMAGE: " +Image)
-        if Image:
-            # Create uploads directory if it doesn't exist
-            upload_folder = "SuperAdvance_IMS/Images/data"
-            os.makedirs(upload_folder, exist_ok=True)
-            
-            # Create a safe filename from ItemName
-            safe_item_name = ''.join(c if c.isalnum() or c in ['-', '_'] else '_' for c in ItemName)
-            filename = f"{safe_item_name}.png"
-            
-            # Full path to save the image
-            image_path = os.path.join(upload_folder, filename)
-            
-            # Decode base64 image and save it
-            try:
-                # Remove the base64 header if present
-                if "," in Image:
-                    Image = Image.split(",")[1]
-                
-                # Decode and save the image
-                with open(image_path, "wb") as img_file:
-                    img_file.write(base64.b64decode(Image))
-                
-                # Get relative path to store in database
-                relative_path = os.path.join("http://localhost/AIQRINVENTORY/SuperAdvance_IMS/Images/data/", filename)
-                print(f"Image saved at: {image_path}")
-            except Exception as img_err:
-                print(f"Error saving image: {img_err}")
-                relative_path = None
-        else:
-            relative_path = None
-            print("No image provided")
-
-
-        legacy_query = """
-        UPDATE `item` SET `itemName`= %s,`discount`= %s,`stock`= %s,`unitPrice`= %s,`description`= %s 
-        WHERE `productID`= %s
-        """
-
-        print(relative_path)
-
-        cursor2.execute(legacy_query,(
-            ItemName,
-            ItemDiscount,
-            ItemQuantity,
-            ItemUnitPrice,
-            ItemDescription,
-            ItemID
-        ))
-
-
-        query = """
-        UPDATE `item` SET `I_Name`= %s, `I_Discount`= %s, `I_UnitPrice`= %s,
-        `I_Stock`= %s, `I_Description`= %s WHERE `I_LegacyCode`= %s
-        """
-
-        cursor.execute(query,(
-            ItemName,
-            ItemDiscount,
-            ItemUnitPrice,
-            ItemQuantity,
-            ItemDescription,
-            ItemID
-        ))
-
-        if(relative_path!=None):
-
-            print("Here: " + relative_path)
-
-            imgquery = """
-             UPDATE `item` SET `I_ImagePath` = %s WHERE `I_LegacyCode` = %s
-             """
-
-            cursor.execute(imgquery,(
-              relative_path,ItemID
-            ))
-
-            conn2.commit()
-            conn.commit()
-            print(f"{ItemID} Successfully Update")
-
-        return jsonify({
-            "status": "success",
-            "message": "Item updated successfully."
-        })
-
-    except mysql.connector.Error as err:
-        print(f"Database Error: {err}")
-        return jsonify({"status": "error", "message": str(err)}), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals() and conn.is_connected():
-            conn.close()         
 
 
 
