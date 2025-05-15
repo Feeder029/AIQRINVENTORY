@@ -154,7 +154,8 @@ def synchronize_inventory():
             
             if legacy_code not in ai_items_dict:
                 # Item doesn't exist in AI inventory - add it
-                qrpath, qrcode = itemqr.generate_qr(legacy_item["itemName"])
+                LegacyID = f"L{legacy_code}"
+                qrpath, qrcode = itemqr.generate_qr(LegacyID,legacy_item["itemName"],legacy_item["unitPrice"],legacy_item["stock"])
                 suggestion = ai.scrapeprice(legacy_item["itemName"])
 
                 SuggestedPrice = suggestion['summary']['suggested_price']

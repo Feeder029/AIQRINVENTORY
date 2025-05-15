@@ -262,18 +262,17 @@ def AddNewItem():
 
         I_Status = "Active"
 
-        qrpath, qrcode = itemqr.generate_qr(ItemName)
 
         # Process image
         relative_path = ImageHandler(Image, ItemName)  # Fixed missing ItemName parameter
 
         query = """
-        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_QRCode`, `I_QRPath`, `I_ImagePath`, `I_Image`, `I_SuggestedPrice`, `I_MaxPriceRange`, `I_MinPriceRange`, `I_EbaySuggestedPrice`, `I_EbayFullInfo`, `I_MCSuggestedPrice`, `I_MCFullInfo`, `I_AmazonSuggestedPrice`, `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`) 
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        INSERT INTO `item`(`I_Name`, `I_Discount`, `I_UnitPrice`, `I_Status`, `I_Stock`, `I_Description`, `I_ImagePath`, `I_Image`, `I_SuggestedPrice`, `I_MaxPriceRange`, `I_MinPriceRange`, `I_EbaySuggestedPrice`, `I_EbayFullInfo`, `I_MCSuggestedPrice`, `I_MCFullInfo`, `I_AmazonSuggestedPrice`, `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`) 
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
         
         inputs = (ItemName, ItemDiscount, ItemUnitPrice, I_Status,
-            ItemQuantity, ItemDescription, qrcode, qrpath, relative_path, Image,
+            ItemQuantity, ItemDescription, relative_path, Image,
             SuggestedPrice, MaxRange, MinRange, EbaySP, EbayInfo, MCSPs, MCInfo, 
             AmazonSP, AmazonInfo, WalmartSP, WalmartInfo)
             
@@ -301,13 +300,15 @@ def AddNewItem():
         # Generate WebID
         WebID = f"W{AIID}"
 
+        qrpath, qrcode = itemqr.generate_qr(WebID,ItemName,ItemUnitPrice,ItemQuantity)
+
         # Update the main record with codes
         updatequery = """
-        UPDATE `item` SET `I_LegacyCode`= %s,`I_MobileCode`= %s WHERE `ItemID`= %s      
+        UPDATE `item` SET `I_LegacyCode`= %s,`I_MobileCode`= %s,`I_QRCode`=%s, `I_QRPath`=%s WHERE `ItemID`= %s           
         """
 
         updateinput = (
-            LID, WebID, AIID
+            LID, WebID, qrcode, qrpath, AIID
         )
         
         # Execute update query
