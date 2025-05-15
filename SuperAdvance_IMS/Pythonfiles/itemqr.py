@@ -7,16 +7,20 @@ import csv
 import os
 import base64
 from io import BytesIO
-
+import json
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # ---------------------- CREATE RECEIPT QR & INPUT DATABASE ---------------------- #
 # Generate QR Code
 def generate_qr(ID,itemname,price,quantity,):
-    # Create QR code data
-    qr_data = f'{"id": {ID}, "name": {itemname}, "price": {price}, "quantity": {quantity}}'
     
+    qr_data = json.dumps({
+    "id": ID,
+    "name": itemname,
+    "price": price,
+    "quantity": quantity
+    })
     qr = qrcode.make(qr_data)
     
     # Save to file system
