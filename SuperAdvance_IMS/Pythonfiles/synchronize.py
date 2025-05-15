@@ -576,7 +576,7 @@ def synchronize_purchase():
             legacy_code = str(legacy_purchases["purchaseID"])
             
             # Get needed foreign keys
-            Pid = legacy_purchases["productID"]
+            Pid = legacy_purchases["itemNumber"]
             Vid = legacy_purchases["vendorID"]
             
             itemIDquery = f"SELECT ItemID FROM item WHERE I_LegacyCode = '{Pid}'"
@@ -590,13 +590,13 @@ def synchronize_purchase():
             if ProductID_result and len(ProductID_result) > 0:
                 ProductID = ProductID_result[0]["ItemID"]
             else:
-                print(f"No matching product found for legacy code: {Pid}")
+                print(f"Purchase No matching product found for legacy code: {Pid}")
                 continue
                 
             if VendorID_result and len(VendorID_result) > 0:
                 VendorID = VendorID_result[0]["VendorID"]
             else:
-                print(f"No matching vendor found for legacy ID: {Vid}")
+                print(f"Purchase No matching vendor found for legacy ID: {Vid}")
                 continue
 
             if legacy_code not in ai_purchase_dict:
@@ -725,8 +725,9 @@ def synchronize_sale():
             legacy_code = str(legacy_sales["saleID"])
             
             # Get needed foreign keys
-            Pid = legacy_sales["productID"]
+            Pid = legacy_sales["itemNumber"]
             Cid = legacy_sales["customerID"]
+
             
             itemIDquery = f"SELECT ItemID FROM item WHERE I_LegacyCode = '{Pid}'"
             customerIDquery = f"SELECT `CustomerID` FROM `customer` WHERE `C_LegacyID` = '{Cid}'"

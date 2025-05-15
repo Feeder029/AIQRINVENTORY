@@ -3,9 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Inventory Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="Dashboard.css">
 </head>
 <body>
-    DASHBOARD
+    <div class="dashboard">
+        <div class="header">
+            <h1>Inventory Dashboard</h1>
+            <div class="date-display">May 15, 2025</div>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Total Items</h3>
+                <p>1,245</p>
+                <div class="change positive-change">+5% from last month</div>
+            </div>
+            <div class="stat-card">
+                <h3>Low Stock Items</h3>
+                <p>23</p>
+                <div class="change negative-change">-2 since yesterday</div>
+            </div>
+            <div class="stat-card">
+                <h3>Profit Margin</h3>
+                <p>24.8%</p>
+                <div class="change positive-change">+1.2% this month</div>
+            </div>
+            <div class="stat-card">
+                <h3>Monthly Revenue</h3>
+                <p>$85,240</p>
+                <div class="change positive-change">+12% from last month</div>
+            </div>
+        </div>
+        
+        <div class="grid-container">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Price Comparison Table</div>
+                    <div class="chart-options">
+                        <select>
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                            <option>Last 90 Days</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>My Shop</th>
+                                <th>ARIMA</th>
+                                <th>Walmart</th>
+                                <th>eBay</th>
+                                <th>Microcenter</th>
+                                <th>Amazon</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Gaming Mouse X1</td>
+                                <td class="price-comparison">$49.99</td>
+                                <td>$52.99</td>
+                                <td>$54.99</td>
+                                <td class="price-low">$47.50</td>
+                                <td>$49.99</td>
+                                <td>$53.99</td>
+                            </tr>
+                            <tr>
+                                <td>Mechanical Keyboard Pro</td>
+                                <td class="price-comparison">$89.99</td>
+                                <td>$94.99</td>
+                                <td class="price-low">$84.99</td>
+                                <td>$92.50</td>
+                                <td>$89.99</td>
+                                <td class="price-high">$99.99</td>
+                            </tr>
+                            <tr>
+                                <td>4K Monitor 27"</td>
+                                <td class="price-comparison">$299.99</td>
+                                <td>$319.99</td>
+                                <td>$324.99</td>
+                                <td class="price-low">$289.99</td>
+                                <td>$309.99</td>
+                                <td class="price-high">$329.99</td>
+                            </tr>
+                            <tr>
+                                <td>Wireless Headphones</td>
+                                <td class="price-comparison">$129.99</td>
+                                <td>$139.99</td>
+                                <td>$134.99</td>
+                                <td>$132.50</td>
+                                <td class="price-low">$124.99</td>
+                                <td>$129.99</td>
+                            </tr>
+                            <tr>
+                                <td>External SSD 1TB</td>
+                                <td class="price-comparison">$119.99</td>
+                                <td>$129.99</td>
+                                <td>$124.99</td>
+                                <td class="price-high">$134.99</td>
+                                <td>$119.99</td>
+                                <td class="price-low">$114.99</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Top 5 Most Sold Items</div>
+                </div>
+                <ul class="top-items-list">
+                    <li>
+                        <div class="item-details">
+                            <div class="item-icon">1</div>
+                            <div>
+                                <div class="item-name">Gaming Mouse X1</div>
+                                <div class="item-category">Peripherals</div>
+                                <div class="progress-container">
+                                    <div class="progress-bar" style="width: 92%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-sales">254 sold</div>
+                    </li>
+                    <li>
+                        <div class="item-details">
+                            <div class="item-icon">2</div>
+                            <div>
+                                <div class="item-name">Wireless Headphones</div>
+                                <div class="item-category">Audio</div>
+                                <div class="progress-container">
+                                    <div class="progress-bar" style="width: 78%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-sales">187 sold</div>
+                    </li>
+                    <li>
+                        <div class="item-details">
+                            <div class="item-icon">3</div>
+                            <div>
+                                <div class="item-name">USB-C Fast Charger</div>
+                                <div class="item-category">Accessories</div>
+                                <div class="progress-container">
+                                    <div class="progress-bar" style="width: 65%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-sales">158 sold</div>
+                    </li>
+                    <li>
+                        <div class="item-details">
+                            <div class="item-icon">4</div>
+                            <div>
+                                <div class="item-name">Mechanical Keyboard Pro</div>
+                                <div class="item-category">Peripherals</div>
+                                <div class="progress-container">
+                                    <div class="progress-bar" style="width: 52%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-sales">132 sold</div>
+                    </li>
+                    <li>
+                        <div class="item-details">
+                            <div class="item-icon">5</div>
+                            <div>
+                                <div class="item-name">External SSD 1TB</div>
+                                <div class="item-category">Storage</div>
+                                <div class="progress-container">
+                                    <div class="progress-bar" style="width: 45%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-sales">118 sold</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="grid-container">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Sales Forecast (ARIMA Model)</div>
+                </div>
+                <canvas id="forecastChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Suggested Price Adjustments</div>
+                </div>
+                <table class="suggested-price-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Current</th>
+                            <th>Suggested</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Gaming Mouse X1</td>
+                            <td>$49.99</td>
+                            <td class="price-recommendation">$52.99 ↑</td>
+                        </tr>
+                        <tr>
+                            <td>Mechanical Keyboard Pro</td>
+                            <td>$89.99</td>
+                            <td class="price-recommendation">$94.99 ↑</td>
+                        </tr>
+                        <tr>
+                            <td>Wireless Headphones</td>
+                            <td>$129.99</td>
+                            <td class="price-recommendation">$124.99 ↓</td>
+                        </tr>
+                        <tr>
+                            <td>External SSD 1TB</td>
+                            <td>$119.99</td>
+                            <td class="price-recommendation">$114.99 ↓</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="grid-container">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Low Stock Alert</div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>In Stock</th>
+                            <th>Threshold</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>USB-C Fast Charger</td>
+                            <td>Accessories</td>
+                            <td class="low-stock">5</td>
+                            <td>20</td>
+                            <td class="low-stock">Critical</td>
+                            <td class="actions"><button>Order Now</button></td>
+                        </tr>
+                        <tr>
+                            <td>4K Monitor 27"</td>
+                            <td>Displays</td>
+                            <td class="low-stock">8</td>
+                            <td>15</td>
+                            <td class="low-stock">Low</td>
+                            <td class="actions"><button>Order Now</button></td>
+                        </tr>
+                        <tr>
+                            <td>Wireless Headphones</td>
+                            <td>Audio</td>
+                            <td class="low-stock">12</td>
+                            <td>25</td>
+                            <td class="low-stock">Low</td>
+                            <td class="actions"><button>Order Now</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">Inventory Distribution</div>
+                </div>
+                <canvas id="inventoryDistribution"></canvas>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div>Last updated: May 15, 2025 09:15 AM</div>
+            <div>Inventory Management System v2.5</div>
+        </div>
+    </div>
+
+    <script src="Dashboard.js"></script>
 </body>
 </html>
