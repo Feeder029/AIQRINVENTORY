@@ -6,7 +6,7 @@
     <title>Item Inventory</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="Item.css?v=1.1.18">
+    <link rel="stylesheet" href="Item.css?v=1.1.19">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -19,7 +19,7 @@
                     <i class='bx bx-printer'></i>
                     Print
                 </button>
-                <button class="btn-secondary">
+                <button class="btn-secondary" popovertarget="QRIMG">
                     <i class='bx bx-qr-scan'></i>
                     QR Scan
                 </button>
@@ -219,6 +219,15 @@
     
   </div>
 
-    <script type="module" src="item.js?v=1.2"></script>
+
+  <div popover id="QRIMG">
+      <div>
+        <img src="" alt="" id="QR" style="width: 300px; height: 300px;">
+        <h3> Item QR CODE</h3>
+      </div>
+  </div>
+
+
+    <script type="module" src="item.js?v=1.4"></script>
 </body>
 </html>

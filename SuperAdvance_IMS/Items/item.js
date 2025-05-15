@@ -39,7 +39,8 @@ function displayItems() {
                     "Quantity" : item.I_Stock,
                     "Discount" : item.I_Discount,
                     "imagePath" : imagePath,
-                    "L_ID" : item.I_LegacyCode
+                    "L_ID" : item.I_LegacyCode,
+                    "QRPath": item.I_QRPath
                 });
 
                 
@@ -77,7 +78,7 @@ function displayItems() {
                                     <div class="separator">&nbsp;</div>
                                     <div class="dropdown-option"><i class="fa-solid fa-trash"></i> Delete</div>
                                     <div class="separator">&nbsp;</div>
-                                    <div class="dropdown-option"><i class="fa-solid fa-square-plus"></i> Add Quantity</div>
+                                    <div class="dropdown-option" onclick='OpenQRCode(${itemInfoJSON})' popovertarget="QRIMG"><i class="fa-solid fa-square-plus" ></i> QR Code </div>
                                 </div>
                             </details>
                         </div>
@@ -326,6 +327,15 @@ function EditAddItem(itemData){
 
   document.getElementById('pricesuggestion').innerHTML = display;
 }
+
+function OpenQRCode(itemdata){
+
+  document.getElementById("QR").src = "../../"+itemdata.QRPath;
+  const qrformm = document.getElementById('QRIMG');
+  
+  qrformm.showPopover();
+}
+
 let a = "";
 function EditItems() {
     // Get file input element
@@ -633,7 +643,7 @@ function pricecomparison(value, min, max) {
     }
 }
 
-
+window.OpenQRCode = OpenQRCode;
 window.suggestedprice = suggestedprice;
 window.pricecomparison = pricecomparison;
 window.EmptyAddItem = EmptyAddItem;

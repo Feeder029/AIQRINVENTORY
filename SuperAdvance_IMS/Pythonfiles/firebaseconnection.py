@@ -5,7 +5,7 @@ import mysql.connector
 import json
 import ai
 import api
-
+import itemqr
 def get_connection(database_name):
     return mysql.connector.connect(
         host='localhost',
@@ -175,6 +175,9 @@ def get_item_price(MobileCode, Name, Price, Stock, Desc):
     
     WalmartSP = suggestion['sources']['walmart']['price']
     WalmartDetails = suggestion['sources']['walmart']['details']
+
+    qrpath, qrcode = itemqr.generate_qr(MobileCode, Name, Price,Stock)
+
     
     """Add item to AI inventory database"""
     try:
@@ -185,8 +188,8 @@ def get_item_price(MobileCode, Name, Price, Stock, Desc):
              INSERT INTO `item`(`I_MobileCode`,  `I_Name`, `I_UnitPrice`,`I_Discount`,`I_Stock`,`I_Description`,
              `I_SuggestedPrice`, `I_MaxPriceRange`, `I_MinPriceRange`, `I_EbaySuggestedPrice`, 
              `I_EbayFullInfo`, `I_MCSuggestedPrice`, `I_MCFullInfo`, `I_AmazonSuggestedPrice`, 
-             `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`) 
-             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             `I_AmazonFullInfo`, `I_WallmartSuggestedPrice`, `I_WallmartInfo`, `I_QRCode`, `I_QRPath`) 
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
         Discount = 0
@@ -197,7 +200,8 @@ def get_item_price(MobileCode, Name, Price, Stock, Desc):
             EbaySP, EbayDetails, 
             MCSP, MCDetails, 
             AmazonSP, AmazonDetails, 
-            WalmartSP, WalmartDetails
+            WalmartSP, WalmartDetails,
+            qrcode,qrpath
         ))
             
         inserted_id = cursor.lastrowid
