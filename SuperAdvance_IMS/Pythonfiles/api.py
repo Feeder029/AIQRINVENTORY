@@ -58,7 +58,9 @@ def GetProducts():
 # For the Display on Purchases
 @app.route('/api/displaypurchases', methods=['GET'])
 def GetPurchase():
+    synchronize.synchronize_inventory()
     synchronize.synchronize_purchase()
+    synchronize.synchronize_vendor()
     sql = """
     SELECT 
     `purchaseID`, 
@@ -67,6 +69,9 @@ def GetPurchase():
     `P_Date`,
     `P_Quantity`, 
     `I_Name`,
+    `P_Cost`, 
+    `P_Price`,
+    `V_LFullName`,
     CASE 
         WHEN DATEDIFF(CURDATE(), `P_Date`) = 0 THEN 'Today'
         WHEN DATEDIFF(CURDATE(), `P_Date`) = 1 THEN '1 day ago'
@@ -75,7 +80,7 @@ def GetPurchase():
         ELSE DATE_FORMAT(`P_Date`, '%M %e, %Y')
     END AS `Date`
     FROM `purchaselist`
-    ORDER BY `P_Date` DESC
+    ORDER BY `P_Date` DESC, `purchaseID` DESC
     """
 
     return GET(sql,"purchases","I_Image")
@@ -232,6 +237,103 @@ def ImageHandler(Image, ItemName):
         print("No image provided")  # Fixed indentation
     
     return relative_path
+
+@app.route('/api/addnewpurchase', methods=['POST'])
+def AddNewPurchase():
+    conn = None
+    try:
+        conn = get_connection()
+        conn2 = get_connection2() 
+
+        data = request.json
+        ItemID = data.get('itemId')
+        ItemName = data.get('itemName')
+        VendorID = data.get('vendorId')
+        VendorName = data.get('vendorName')
+        PurchaseDate = data.get('date')
+        Quantity = data.get('quantity')
+        Price = data.get('unitPrice')
+        Cost = data.get('totalCost')
+
+
+        aiquery = """
+        INSERT INTO `purchase`(`ItemID`, `VendorID`, `P_Date`, `P_Quantity`, `P_Price`, `P_Cost`)
+        VALUES (%s,%s,%s,%s,%s,%s)
+        """
+        
+        aiinputs = (ItemID,VendorID,PurchaseDate,Quantity,Price,Cost)
+            
+        # Execute the query
+        AIID = POST(conn, aiquery, aiinputs)
+        
+        # Fixed legacyquery with correct number of placeholders
+        legacyquery = """
+        INSERT INTO `purchase`(`itemNumber`, `purchaseDate`, `itemName`, `unitPrice`, `quantity`, `vendorName`, `vendorID`) 
+        VALUES (%s,%s,%s,%s,%s,%s,%s)"""
+
+        # Adjust legacy inputs to match parameters
+        legacyinputs = (
+            ItemID,PurchaseDate,ItemName,Price,Quantity,VendorName,VendorID
+        )
+
+        # Insert into legacy database
+        LID = POST(conn2, legacyquery, legacyinputs)  # Using conn2 for legacy database
+
+        # Update the main record with codes
+        updatequery = """
+        UPDATE `purchase` SET `P_LegacyID`= %s WHERE `purchaseID` = %s      
+        """
+
+        updateinput = (
+            LID, AIID
+        )
+        
+        # Execute update query
+        cursor = conn.cursor()
+
+        addquantity = """
+        UPDATE `item` SET `I_Stock` = `I_Stock` + %s WHERE `ItemID` = %s;
+        """
+        updatequantity = (
+            Quantity, ItemID
+        )
+
+        cursor.execute(updatequery, updateinput)
+        cursor.execute(addquantity, updatequantity)
+
+        cursor2 = conn2.cursor()
+
+        updatelegacyquery = """
+        UPDATE `item` SET `stock` = `stock` + %s WHERE `itemName`= %s
+        """
+
+        updatelegacyinput = (
+            Quantity, ItemName
+        )
+
+        cursor2.execute(updatelegacyquery, updatelegacyinput)
+
+
+        conn2.commit()
+        conn.commit()
+
+        # Return success response
+        return jsonify({"status": "success", "message": "Item added successfully"}), 200
+    
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        print(f"Database Error: {err}")
+        return jsonify({"status": "error", "message": str(err)}), 500
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
 
 
 @app.route('/api/insertitems', methods=['POST'])

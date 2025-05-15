@@ -7,37 +7,33 @@ function DisplayPurchases() {
         if(data.purchases && data.purchases.length > 0) {
             data.purchases.forEach(item => {
                 // Process the image path if it exists
-                let imagePath = item.I_ImagePath;
+        let imagePath = item.I_ImagePath;
 
+        const imageDisplay = imagePath ? imagePath : "../Images/data/Placeholder.png" ;
 
-                console.log(imagePath)
-                
-                // Fall back to placeholder if no valid image path
-                const imageDisplay = imagePath ? 
-                    `<img src="${imagePath}" alt="${item.I_Name}" onerror="this.onerror=null; this.src='./assets/placeholder.jpg';">` : 
-                    `<div class="placeholder-text">Product Image</div>`;
 
                 
                 console.log(imageDisplay)
 
                 
                 display += `
-                    <tr class="row-data">
-                    <div class="data" >
-                    <div class="data-left">
-                        ${imageDisplay}
-                        <div class="left">
-                            <h1 id="item-name">${item.I_Name}</h1>
-                            <p id="item-stock">${item.P_Quantity} Pieces</p>
-                         </div>
-                         </div>
-                          <div class="data-right">
-                           <button><i class='bx bx-dots-horizontal-rounded'></i></button>
-                           <p id="item-date">${item.Date}</p>
-                          </div>
-                         </div>
-                        </tr>
-                    </div>
+<div class="purchase-card">
+  <!-- Left side: Image + Item details -->
+  <div class="left-section">
+    <img src="${imageDisplay}" alt="Item" class="item-image"/>
+    <div class="item-info">
+      <h2 class="item-name">${item.I_Name}</h2>
+      <p class="item-details">${item.P_Quantity} Pieces | ${item.V_LFullName}</p>
+    </div>
+  </div>
+  
+  <!-- Right side: dots and date -->
+  <div class="right-section">
+    <button class="action-dots"><i class='bx bx-dots-horizontal-rounded'></i></button>
+    <div class="total-amount">$${item.P_Cost}</div>
+    <div class="date">${item.Date}</div>
+  </div>
+</div>
                     `;
             });
 
@@ -109,7 +105,6 @@ function DropdownOptions() {
     })
 }
 
-
 function SetUp(){
   const dropdown = document.getElementById('item-dropdown');
   const selected = dropdown.querySelector('.dropdown-selected');
@@ -133,13 +128,106 @@ function SetUp(){
       options.style.display = 'none';
     }
   });
+
+  const purchasedate = document.getElementById("purchasedate");
+  if (!purchasedate.value) {
+    const nowPH = new Date();
+    const todayPH = nowPH.toISOString().split('T')[0];
+    purchasedate.value = todayPH;
+  }
+
+  document.getElementById("amount").addEventListener("input", updateTotalCost);
+  document.getElementById("price").addEventListener("input", updateTotalCost);
 }
 
 function Purchase(){
   const selectedItemValue = document.getElementById('selected-item').value;
+  const vendorValue = document.getElementById("vendor").value;
+  const vendorName = document.getElementById("vendor").options[document.getElementById("vendor").selectedIndex].textContent;
+  const purchasedate = document.getElementById("purchasedate").value;
+  const amount = document.getElementById("amount").value;
+  const price = document.getElementById("price").value;
   
+  // Get the selected item name from the dropdown
+  const selectedItemName = document.querySelector('.dropdown-selected .name').textContent;
+  
+  // Validate form fields
+  if (!selectedItemValue || !vendorValue || !purchasedate || !amount || !price) {
+    alert("Please fill in all fields");
+    return;
+  }
 
+  const totalCost = parseFloat(amount) * parseFloat(price);
+
+  const purchaseData = {
+    itemId: selectedItemValue,
+    itemName: selectedItemName,
+    vendorId: vendorValue,
+    vendorName: vendorName,
+    date: purchasedate,
+    quantity: amount,
+    unitPrice: price,
+    totalCost: totalCost
+  };
+  
+  fetch("http://localhost:5000/api/addnewpurchase", {
+    method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+        body: JSON.stringify(purchaseData)
+  })
+  .then(response => response.json())
+  .then(data => {
+  if (data.status === "success") {
+    // Success message using SweetAlert
+    Swal.fire(
+      'Saved!',
+      'Item has been saved successfully.',
+      'success'
+    );
+
+    DisplayPurchases();
+
+    } else {
+      // Error message using SweetAlert
+      Swal.fire(
+        'Error!',
+        'Failed to save item: ' + data.message,
+        'error'
+        );
+    }
+    })
+    .catch(error => {
+      console.error("Access Error:", error);
+      // Error message using SweetAlert
+      Swal.fire(
+        'Error!',
+        'Error saving item: ' + error.message,
+        'error'
+      );
+    });
+
+                  
+  console.log("Submitting purchase:", purchaseData);
+  
+  const popover = document.getElementById('addpurchase');
+  if (popover && typeof popover.hidePopover === 'function') {
+    popover.hidePopover();
+  }
+  
 }
+
+function updateTotalCost() {
+    const amount = document.getElementById("amount").value || 0;
+    const price = document.getElementById("price").value || 0;
+    const totalCost = (parseFloat(amount) * parseFloat(price)).toFixed(2);
+    document.querySelector('.calculated-cost').textContent = `Total Cost: $${totalCost}`;
+}
+
+// Add this to your SetUp function
+document.getElementById("amount").addEventListener('input', updateTotalCost);
+document.getElementById("price").addEventListener('input', updateTotalCost);
 
 window.Purchase = Purchase;
 // Call the function to display items

@@ -51,7 +51,7 @@ function displayItems() {
                         </div>
                         <div class="item-details">
                             <h2>${itemName}</h2>
-                            <p>Price: <span>${item.I_UnitPrice}</span></p>
+                            <p>Price: <span>$${item.I_UnitPrice}</span></p>
                             <p>Stocks: <span>${item.I_Stock}</span></p>
                         </div>
                         <div class="item-icons ">

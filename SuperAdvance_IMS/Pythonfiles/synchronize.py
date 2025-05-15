@@ -550,9 +550,9 @@ def synchronize_purchase():
         # Get legacy purchase
         legacy_conn = get_connection('shop_inventory')
         legacy_query = """
-        SELECT a.purchaseID, b.productID, a.itemNumber, c.vendorID, a.quantity, purchaseDate FROM purchase a
+          SELECT a.purchaseID, b.productID, a.itemNumber, c.vendorID, a.quantity, purchaseDate, a.unitPrice, (a.unitPrice * a.quantity) AS 'cost' FROM purchase a
           JOIN item b ON a.itemNumber = b.itemNumber
-          JOIN vendor c ON a.vendorID = c.vendorID
+          JOIN vendor c ON a.vendorID = c.vendorID;
         """
         legacy_purchase = fetch_records(legacy_conn, legacy_query)
         legacy_conn.close()
@@ -560,7 +560,7 @@ def synchronize_purchase():
         # Get current AI inventory purchase
         ai_conn = get_connection('ai_inventory')
         ai_query = """
-            SELECT purchaseID, ItemID, VendorID, P_Date, P_Quantity, P_LegacyID FROM purchase 
+            SELECT purchaseID, ItemID, VendorID, P_Date, P_Quantity, P_LegacyID, `P_Price`, `P_Cost` FROM purchase 
         """
         ai_purchase = fetch_records(ai_conn, ai_query)
         
@@ -610,7 +610,9 @@ def synchronize_purchase():
                 
                 # Check if any data has changed
                 if (ai_purchase_record["P_Quantity"] != legacy_purchases["quantity"] or 
-                    ai_purchase_record["P_Date"] != legacy_purchases["purchaseDate"]):
+                    ai_purchase_record["P_Date"] != legacy_purchases["purchaseDate"] or
+                    ai_purchase_record["P_Price"] != legacy_purchases["unitPrice"] or
+                    ai_purchase_record["P_Cost"] != legacy_purchases["cost"]):
                     needs_update = True
                 
                 # Check if relationships have changed
@@ -636,11 +638,13 @@ def add_purchase(purchase, ProductID, VendorID):
             cursor = conn.cursor()
             
             query = """
-            INSERT INTO purchase(ItemID, VendorID, P_Date, P_Quantity, P_LegacyID) VALUES (%s,%s,%s,%s,%s)
+            INSERT INTO purchase(ItemID, VendorID, P_Date, P_Quantity, P_LegacyID, P_Price, P_Cost) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
 
             cursor.execute(query, (
-                ProductID, VendorID, purchase['purchaseDate'], purchase['quantity'], purchase['purchaseID']
+                ProductID, VendorID, purchase['purchaseDate'], purchase['quantity'], 
+                purchase['purchaseID'], purchase['unitPrice'], purchase['cost']
             ))
             
             conn.commit()
@@ -650,6 +654,26 @@ def add_purchase(purchase, ProductID, VendorID):
         print(f"Database Error: {err}")
 
 def update_purchase(purchase, ProductID, VendorID, purchaseID):
+    try:
+        with get_connection('ai_inventory') as conn:
+            cursor = conn.cursor()
+            
+            query = """
+            UPDATE purchase 
+            SET ItemID = %s, VendorID = %s, P_Date = %s, P_Quantity = %s, P_Price = %s, P_Cost = %s
+            WHERE purchaseID = %s
+            """
+
+            cursor.execute(query, (
+                ProductID, VendorID, purchase['purchaseDate'], purchase['quantity'],
+                purchase['unitPrice'], purchase['cost'], purchaseID
+            ))
+            
+            conn.commit()
+            print(f"Successfully updated purchase with legacy ID: {purchase['purchaseID']}")
+
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
     try:
         with get_connection('ai_inventory') as conn:
             cursor = conn.cursor()
