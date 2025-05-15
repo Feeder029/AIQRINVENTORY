@@ -92,12 +92,12 @@ def GetSales():
 
     sql = """
         SELECT 
-        `S_LegacyID`, `C_LFullName`, DATE_FORMAT(`S_Date`, '%M %e %Y') AS `S_Date`, `I_Name`, 
+        `S_LegacyID`, `C_LFullName`,`S_Date`, DATE_FORMAT(`S_Date`, '%M %e %Y') AS `SaleDate`, `I_Name`, 
         `S_Quantity`, `S_Discount`, `S_UnitPrice`,
         ROUND((`S_UnitPrice` * `S_Quantity`) - ((`S_UnitPrice` * `S_Quantity`) * (`S_Discount` / 100)), 2) AS `TotalPrice`
         FROM 
         `salelist`
-        ORDER BY `S_Date` ASC, `S_LegacyID` DESC;  
+        ORDER BY `S_Date` DESC, `S_LegacyID` DESC;  
          """
     
     return GET(sql,"sales")
@@ -109,7 +109,7 @@ def GetCustomers():
 
     
     sql = """
-          SELECT `CustomerID`, `C_LFullName`,  `C_Email`, `C_Mobile`, `C_Mobile2`,`CA_Street`, `C_status` FROM `customerlist`  
+          SELECT `CustomerID`, `C_LFullName`,  `C_Email`, `C_Mobile`, `C_Mobile2`,`CA_Street`, `C_status`, `C_LegacyID` FROM `customerlist`  
          """
     return GET(sql,"customer")
 
@@ -118,7 +118,7 @@ def GetCustomers():
 def GetVendors():
     synchronize.synchronize_vendor()
     sql = """
-          SELECT a.VendorID, a.V_LFullName, a.V_Email, a.V_Mobile, a.V_Mobile2, a.VA_Street, a.V_status FROM `vendorlist` a
+          SELECT a.VendorID, a.V_LFullName, a.V_Email, a.V_Mobile, a.V_Mobile2, a.VA_Street, a.V_status, a.V_LegacyID FROM `vendorlist` a
          """
     return GET(sql,"vendor")
 
@@ -254,6 +254,8 @@ def AddNewPurchase():
         Quantity = data.get('quantity')
         Price = data.get('unitPrice')
         Cost = data.get('totalCost')
+        LegacyCode = data.get('legacycode')
+        LegacyVendorID = data.get('LegacyVendorID')
 
 
         aiquery = """
@@ -273,7 +275,7 @@ def AddNewPurchase():
 
         # Adjust legacy inputs to match parameters
         legacyinputs = (
-            ItemID,PurchaseDate,ItemName,Price,Quantity,VendorName,VendorID
+            LegacyCode,PurchaseDate,ItemName,Price,Quantity,VendorName,LegacyVendorID
         )
 
         # Insert into legacy database
@@ -334,6 +336,108 @@ def AddNewPurchase():
     finally:
         if conn:
             conn.close()
+
+
+@app.route('/api/addnewsale', methods=['POST'])
+def AddNewSale():
+    conn = None
+    try:
+        conn = get_connection()
+        conn2 = get_connection2() 
+
+        data = request.json
+        ItemID = data.get('itemId')
+        customerID = data.get('customerID')
+        date = data.get('date')
+        quantity = data.get('quantity')
+        discount = data.get('discount')
+        unitPrice = data.get('unitPrice')
+        ItemName = data.get('ItemName')
+        LegacyCode = data.get('legacycode')
+        LegacyCustomer = data.get('LegacyCustomerID')
+        CustomerName = data.get('CustomerName')
+
+
+        aiquery = """
+        INSERT INTO `sale`(`ItemID`, `customerID`, `S_Date`, `S_Quantity`, `S_Discount`, `S_UnitPrice`) 
+        VALUES (%s,%s,%s,%s,%s,%s)
+        """
+        
+        aiinputs = (ItemID,customerID,date,quantity,discount,unitPrice)
+            
+        # Execute the query
+        AIID = POST(conn, aiquery, aiinputs)
+        
+        # Fixed legacyquery with correct number of placeholders
+        legacyquery = """
+        INSERT INTO `sale`(`itemNumber`, `customerID`, `customerName`, `itemName`, `saleDate`, `discount`, `quantity`, `unitPrice`) 
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """
+
+        # Adjust legacy inputs to match parameters
+        legacyinputs = (
+            LegacyCode,LegacyCustomer,CustomerName,ItemName,date,discount,quantity,unitPrice
+        )
+
+        # Insert into legacy database
+        LID = POST(conn2, legacyquery, legacyinputs)  # Using conn2 for legacy database
+
+        # Update the main record with codes
+        updatequery = """
+        UPDATE `sale` SET `S_LegacyID`= %s WHERE `saleID` = %s      
+        """
+
+        updateinput = (
+            LID, AIID
+        )
+        
+        # Execute update query
+        cursor = conn.cursor()
+
+        deductquantity = """
+        UPDATE `item` SET `I_Stock` = `I_Stock` - %s WHERE `ItemID` = %s;
+        """
+        updatequantity = (
+            quantity, ItemID
+        )
+
+        cursor.execute(updatequery, updateinput)
+        cursor.execute(deductquantity, updatequantity)
+
+        cursor2 = conn2.cursor()
+
+        updatelegacyquery = """
+        UPDATE `item` SET `stock` = `stock` - %s WHERE `itemName`= %s
+        """
+
+        updatelegacyinput = (
+            quantity, ItemName
+        )
+
+        cursor2.execute(updatelegacyquery, updatelegacyinput)
+
+
+        conn2.commit()
+        conn.commit()
+
+        # Return success response
+        return jsonify({"status": "success", "message": "Item added successfully"}), 200
+    
+
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        print(f"Database Error: {err}")
+        return jsonify({"status": "error", "message": str(err)}), 500
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
 
 
 @app.route('/api/insertitems', methods=['POST'])
@@ -410,7 +514,7 @@ def AddNewItem():
         """
 
         updateinput = (
-            LID, WebID, qrcode, qrpath, AIID
+            ItemNumber, WebID, qrcode, qrpath, AIID
         )
         
         # Execute update query

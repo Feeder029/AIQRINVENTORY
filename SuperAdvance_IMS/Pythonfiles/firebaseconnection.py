@@ -224,7 +224,7 @@ def get_item_price(MobileCode, Name, Price, Stock, Desc):
         """
 
         cursor.execute(updatequery, (
-            legacy_id, inserted_id
+            ItemNum, inserted_id
         ))
 
         legacyconn.commit()      

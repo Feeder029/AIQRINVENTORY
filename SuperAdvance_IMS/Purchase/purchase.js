@@ -69,6 +69,7 @@ function DropdownOptions() {
         <img src="${imageDisplay}" id="picture_dropdown" alt="${item.I_Name}" />
         <div class="details">
         <div class="name">${item.I_Name}</div>
+        <div class="legacycode" hidden>${item.I_LegacyCode}</div>
         <div class="stock">Stock: ${item.I_Stock}</div>
         </div>
        `;
@@ -87,6 +88,7 @@ function DropdownOptions() {
         vendordata.vendor.forEach(vendor =>{
           const option = document.createElement('option');
           option.value = vendor.VendorID;
+          option.setAttribute('legacy', vendor.V_LegacyID);
           option.textContent = vendor.V_LFullName;
           vendorSelect.appendChild(option);
         }
@@ -150,13 +152,17 @@ function Purchase(){
   
   // Get the selected item name from the dropdown
   const selectedItemName = document.querySelector('.dropdown-selected .name').textContent;
-  
+  const legacycode = document.querySelector('.dropdown-selected .legacycode').textContent;
+  const LegacyVendorID = document.getElementById("vendor").options[document.getElementById("vendor").selectedIndex].getAttribute("legacy");
+
+ 
   // Validate form fields
   if (!selectedItemValue || !vendorValue || !purchasedate || !amount || !price) {
     alert("Please fill in all fields");
     return;
   }
 
+  // alert(LegacyVendorID)
   const totalCost = parseFloat(amount) * parseFloat(price);
 
   const purchaseData = {
@@ -167,7 +173,9 @@ function Purchase(){
     date: purchasedate,
     quantity: amount,
     unitPrice: price,
-    totalCost: totalCost
+    totalCost: totalCost,
+    legacycode:legacycode,
+    LegacyVendorID: LegacyVendorID
   };
   
   fetch("http://localhost:5000/api/addnewpurchase", {

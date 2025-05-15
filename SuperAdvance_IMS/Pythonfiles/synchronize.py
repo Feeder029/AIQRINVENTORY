@@ -62,7 +62,7 @@ def add_item(item, qrpath, qrcode,SuggestedPrice,MaxPrice,MinPrice,EbaySP,EbayDe
             MobileID = f"L{item['productID']}"
 
             cursor.execute(query, (
-                item['productID'],MobileID,item['itemName'], item['discount'], item['unitPrice'], 
+                item['itemNumber'],MobileID,item['itemName'], item['discount'], item['unitPrice'], 
                 item['status'], item['stock'], item['description'], qrcode, 
                 qrpath,image_path,SuggestedPrice,MaxPrice,
                 MinPrice,EbaySP,EbayDetails,MCSPs,
@@ -150,7 +150,7 @@ def synchronize_inventory():
         
         # Process all legacy items
         for legacy_item in legacy_items:
-            legacy_code = str(legacy_item["productID"])
+            legacy_code = str(legacy_item["itemNumber"])
             
             if legacy_code not in ai_items_dict:
                 # Item doesn't exist in AI inventory - add it
