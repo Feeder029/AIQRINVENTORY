@@ -57,7 +57,7 @@ def GetProducts():
 
 # For the Display on Purchases
 @app.route('/api/displaypurchases', methods=['GET'])
-def GetPurchase():
+def GetPurchase(): 
     synchronize.synchronize_inventory()
     synchronize.synchronize_purchase()
     synchronize.synchronize_vendor()
@@ -256,6 +256,7 @@ def AddNewPurchase():
         Cost = data.get('totalCost')
         LegacyCode = data.get('legacycode')
         LegacyVendorID = data.get('LegacyVendorID')
+        mobilecode = data.get('mobilecode')
 
 
         aiquery = """
@@ -312,6 +313,10 @@ def AddNewPurchase():
         updatelegacyinput = (
             Quantity, ItemName
         )
+        
+        success, message = firebaseconnection.update_quantity(ID=mobilecode, quantity_change=Quantity)
+
+        print(message)
 
         cursor2.execute(updatelegacyquery, updatelegacyinput)
 
@@ -565,10 +570,9 @@ def ItemUpdate():
         # Update in legacy database
         legacy_query = """
         UPDATE `item` SET `itemName`= %s,`discount`= %s,`stock`= %s,`unitPrice`= %s,`description`= %s 
-        WHERE `productID`= %s
+        WHERE `itemNumber`= %s
         """
 
-        # Using traditional execution since POST is for INSERT operations
         cursor2 = conn2.cursor()
         cursor2.execute(legacy_query, (
             ItemName,

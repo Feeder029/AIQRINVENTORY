@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 13, 2025 at 12:13 PM
+-- Generation Time: May 15, 2025 at 05:28 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -81,12 +81,16 @@ CREATE TABLE `item` (
 --
 
 INSERT INTO `item` (`productID`, `itemNumber`, `itemName`, `discount`, `stock`, `unitPrice`, `imageURL`, `status`, `description`) VALUES
-(34, '1', 'Redragon K686 Wireless Mechanical Keyboard', 0, 33, 23.32, '1747121144_Redragon.png', 'Active', 'A Wireless Keyboard'),
-(35, '2', 'Apple 13-inch MacBook Air', 0, 10, 500, '1747121246_shopping (3).png', 'Active', ''),
-(36, '3', 'Vivobook Go 12', 0, 5, 1300, '1747121331_images.jpg', 'Active', ''),
-(37, '4', 'Logitech G331 Stereo Gaming Headset', 2, 6, 3409, '1747121458_Logitech.png', 'Active', ''),
-(38, '5', 'Dell 65W USB-C Laptop Charger', 2, 20, 1200, '1747121570_shopping (4).png', 'Active', ''),
-(50, '1011', 'acer Aspire TC-1785', 0, 10, 344, 'http://localhost/AIQRINVENTORY/SuperAdvance_IMS/Images/data/acer_Aspire_TC-1785.png', 'Active', 'Computer Part');
+(234, '2', 'Apple 13-inch MacBook Air', 0, 2, 500, '1747314560_images (2).jpg', 'Active', 'Apple 13-inch MacBook Air'),
+(235, '3', 'Vivobook Go 12', 0, 12, 333, '1747314681_1747121331_images.jpg', 'Active', 'Vivobook Go 12\n'),
+(236, '4', 'Logitech G331 Stereo Gami...', 0, 10, 3033, '1747314687_1747121458_Logitech.png', 'Active', 'Logitech G331 Stereo Gami...\n'),
+(237, '5', 'Dell 65W USB-C Laptop Charger', 0, 6, 1200, '1747314694_1747121570_shopping (4).png', 'Active', ''),
+(243, '2005', 'ACER 27 Nitro Monitor', 0, 50, 50.99, 'imageNotAvailable.jpg', 'Active', '4k 144hz'),
+(244, '2006', 'Dell OptiPlex Laptop Charger 65W', 0, 10, 15.99, 'imageNotAvailable.jpg', 'Active', '65W'),
+(245, '2007', 'Logitech G305', 0, 20, 10.99, 'imageNotAvailable.jpg', 'Active', '10 Million Clicks'),
+(246, '2008', 'PHILIPS Webcam 2K', 0, 33, 40.99, 'imageNotAvailable.jpg', 'Active', '1080p'),
+(247, '2009', 'ASUS Vivobook 15 Laptop', 0, 20, 150.99, 'imageNotAvailable.jpg', 'Active', 'Intel i9 14th gen'),
+(248, '1010', 'Blackview Bv9300 Pro', 0, 10, 199.72, 'http://localhost/AIQRINVENTORY/SuperAdvance_IMS/Images/data/Blackview_Bv9300_Pro.png', 'Active', 'Blackview Bv9300 Pro');
 
 -- --------------------------------------------------------
 
@@ -110,20 +114,22 @@ CREATE TABLE `purchase` (
 --
 
 INSERT INTO `purchase` (`purchaseID`, `itemNumber`, `purchaseDate`, `itemName`, `unitPrice`, `quantity`, `vendorName`, `vendorID`) VALUES
-(39, '1', '2018-05-24', 'Redragon K686 Wireless Mechanical Keyboard', 1600, 10, 'Johnson and Johnsons Co.', 3),
-(40, '2', '2018-05-18', 'Apple 13-inch MacBook Air', 2341, 2, 'Louise Vitton Bag', 4),
-(41, '4', '2018-05-07', 'Logitech G331 Stereo Gaming Headset', 1234, 3, 'Johnson and Johnsons Co.', 3),
-(42, '1', '2018-05-24', 'Redragon K686 Wireless Mechanical Keyboard', 345, 12, 'Louise Vitton Bag', 4),
-(43, '5', '2018-05-03', 'Dell 65W USB-C Laptop Charger', 35, 3, 'Johnson and Johnsons Co.', 3),
-(44, '5', '2018-05-16', 'Dell 65W USB-C Laptop Charger', 3000, 2, 'ABC Company', 1),
-(45, '5', '2018-05-21', 'Dell 65W USB-C Laptop Charger', 3000, 10, 'Sample Vendor 222', 2),
-(46, '4', '2018-05-19', 'Logitech G331 Stereo Gaming Headset', 1200, 4, 'Johnson and Johnsons Co.', 3),
-(47, '2', '2018-05-10', 'Apple 13-inch MacBook Air', 2, 1, 'Sample Vendor 222', 2),
-(48, '1', '2018-05-12', 'Redragon K686 Wireless Mechanical Keyboard', 2, 9, 'ABC Company', 1),
-(50, '3', '2018-05-15', 'Vivobook Go 12', 1000, 5, 'Louise Vitton Bag', 4),
-(51, '4', '2018-05-11', 'Logitech G331 Stereo Gaming Headset', 1121, 1, 'ABC Company', 1),
-(52, '1', '2018-05-21', 'Redragon K686 Wireless Mechanical Keyboard', 1235, 2, 'Sample Vendor 222', 2),
-(53, '5', '2018-05-24', 'Dell 65W USB-C Laptop Charger', 0, 3, 'ABC Company', 1);
+(40, '2', '2025-04-01', 'Apple 13-inch MacBook Air', 2341, 2, 'Arrow Electronics', 4),
+(41, '4', '2025-04-01', 'Logitech G331 Stereo Gaming Headset', 1234, 3, 'Park Electronics', 3),
+(43, '5', '2025-04-01', 'Dell 65W USB-C Laptop Charger', 35, 3, 'Park Electronics', 3),
+(44, '5', '2025-04-02', 'Dell 65W USB-C Laptop Charger', 3000, 2, 'RS Components', 1),
+(45, '5', '2025-04-02', 'Dell 65W USB-C Laptop Charger', 3000, 10, 'Digi-Key Electronics', 2),
+(46, '4', '2025-04-02', 'Logitech G331 Stereo Gaming Headset', 1200, 4, 'Park Electronics', 3),
+(47, '2', '2025-04-02', 'Apple 13-inch MacBook Air', 2, 1, 'Digi-Key Electronics', 2),
+(50, '3', '2025-04-03', 'Vivobook Go 12', 1000, 5, 'Arrow Electronics', 4),
+(51, '4', '2025-04-03', 'Logitech G331 Stereo Gaming Headset', 1121, 1, 'RS Components', 1),
+(53, '5', '2018-05-24', 'Dell 65W USB-C Laptop Charger', 0, 3, 'RS Components', 1),
+(54, '2', '2025-05-15', 'Apple 13-inch MacBook Air', 444, 3, 'RS Components', 1),
+(63, '2', '2025-05-21', 'Apple 13-inch MacBook Air', 200, 2, 'RS Components', 1),
+(64, '5', '2018-05-24', 'Dell 65W USB-C Laptop Charger', 1100, 3, 'Digi-Key Electronics', 2),
+(65, '2007', '2018-05-24', 'Logitech G305', 8.5, 3, 'Digi-Key Electronics', 2),
+(66, '3', '2025-05-02', 'Vivobook Go 12', 300, 1, 'Digi-Key Electronics', 2),
+(67, '2', '2025-05-15', 'Apple 13-inch MacBook Air', 500, 2, 'RS Components', 1);
 
 -- --------------------------------------------------------
 
@@ -148,23 +154,17 @@ CREATE TABLE `sale` (
 --
 
 INSERT INTO `sale` (`saleID`, `itemNumber`, `customerID`, `customerName`, `itemName`, `saleDate`, `discount`, `quantity`, `unitPrice`) VALUES
-(1, '3', 4, 'Bill Gates', 'Vivobook Go 12', '2018-05-24', 5, 2, 1300),
-(2, '1', 39, 'Amal Silverton', 'Redragon K686 Wireless Mechanical Keyboard', '2018-05-24', 0, 111, 1500),
-(3, '4', 18, 'Asitha Silva', 'Logitech G331 Stereo Gaming Headset', '2018-05-24', 2, 1, 3409),
-(4, '5', 25, 'Theresa May', 'Dell 65W USB-C Laptop Charger', '2018-05-24', 2, 1, 1200),
-(5, '6', 24, 'Sunil Perera', 'Gym Bag', '2018-05-24', 0, 1, 3000),
-(6, '5', 14, 'Steve Jobs', 'Dell 65W USB-C Laptop Charger', '2018-05-24', 1.5, 1, 1650),
-(7, '3', 4, 'Bill Gates', 'Vivobook Go 12', '2018-05-24', 0, 3, 1300),
-(8, '2', 4, 'Bill Gates', 'Apple 13-inch MacBook Air', '2018-05-14', 2.1, 1, 2300),
-(9, '6', 26, 'Sachin Tendulkar', 'Gym Bag', '2018-05-14', 0, 1, 3000),
-(10, '5', 25, 'Theresa May', 'Dell 65W USB-C Laptop Charger', '2018-05-14', 2, 9, 1200),
-(11, '4', 26, 'Sachin Tendulkar', 'Logitech G331 Stereo Gaming Headset', '2018-04-05', 1, 7, 1000),
-(12, '1', 14, 'Steve Jobs', 'Redragon K686 Wireless Mechanical Keyboard', '2018-05-14', 0, 2, 1500),
-(13, '3', 38, 'Nuwan Perara', 'Vivobook Go 12', '2018-05-24', 0, 0, 1300),
-(14, '2', 39, 'Amal Silverton', 'Apple 13-inch MacBook Air', '2018-05-17', 1, 1, 1000),
-(15, '3', 38, 'Nuwan Perara', 'Vivobook Go 12', '2018-05-24', 1.5, 1, 1200),
-(16, '1', 14, 'Steve Jobs', 'Redragon K686 Wireless Mechanical Keyboard', '2018-05-24', 10, 1, 1500),
-(17, '4', 14, 'Steve Jobs', 'Logitech G331 Stereo Gaming Headset', '2018-05-18', 2, 1, 3409);
+(1, '3', 4, 'Bill Gates', 'Vivobook Go 12', '2025-03-24', 5, 2, 1300),
+(3, '4', 18, 'Asitha Silva', 'Logitech G331 Stereo Gaming Headset', '2025-03-24', 2, 1, 3409),
+(4, '5', 25, 'Theresa May', 'Dell 65W USB-C Laptop Charger', '2025-03-24', 2, 1, 1200),
+(6, '5', 14, 'Steve Jobs', 'Dell 65W USB-C Laptop Charger', '2025-03-24', 1.5, 1, 1650),
+(7, '3', 4, 'Bill Gates', 'Vivobook Go 12', '2025-04-24', 0, 3, 1300),
+(8, '2', 4, 'Bill Gates', 'Apple 13-inch MacBook Air', '2025-04-14', 2.1, 1, 2300),
+(10, '5', 25, 'Theresa May', 'Dell 65W USB-C Laptop Charger', '2025-04-14', 2, 9, 1200),
+(11, '4', 26, 'Sachin Tendulkar', 'Logitech G331 Stereo Gaming Headset', '2025-04-05', 1, 7, 1000),
+(13, '3', 38, 'Nuwan Perara', 'Vivobook Go 12', '2025-04-24', 0, 0, 1300),
+(15, '3', 38, 'Nuwan Perara', 'Vivobook Go 12', '2025-04-24', 1.5, 1, 1200),
+(27, '4', 3, 'Asitha Silva', 'Logitech G331 Stereo Gaming Headset', '2025-05-15', 2, 2, 3409);
 
 -- --------------------------------------------------------
 
@@ -187,7 +187,8 @@ CREATE TABLE `user` (
 INSERT INTO `user` (`userID`, `fullName`, `username`, `password`, `status`) VALUES
 (5, 'Guest', 'guest', '81dc9bdb52d04dc20036dbd8313ed055', 'Active'),
 (6, 'a', 'a', '0cc175b9c0f1b6a831c399e269772661', 'Active'),
-(7, 'admin', 'admin', '21232f297a57a5a743894a0e4a801fc3', 'Active');
+(7, 'admin', 'admin', '21232f297a57a5a743894a0e4a801fc3', 'Active'),
+(8, 'User', 'User', 'b9b57aae83585e17ede4570dcede353c', 'Active');
 
 -- --------------------------------------------------------
 
@@ -214,14 +215,10 @@ CREATE TABLE `vendor` (
 --
 
 INSERT INTO `vendor` (`vendorID`, `fullName`, `email`, `mobile`, `phone2`, `address`, `address2`, `city`, `district`, `status`, `createdOn`) VALUES
-(1, 'ABC Company', '', 2343567, 0, '80, Ground Floor, ABC Shopping Complex', '46th Avenue', 'Kolpetty', 'Colombo', 'Active', '2018-05-05 05:48:44'),
-(2, 'Sample Vendor 222', 'sample@volvo.com', 99828282, 283730183, '123, A Road, B avenue', 'Pitipana', 'Nugegoda', 'Mannar', 'Disabled', '2018-05-05 06:12:02'),
-(3, 'Johnson and Johnsons Co.', '', 32323, 0, '34, Malwatta Road, Kottawa', 'Pannipitiya', 'Maharagama', 'Colombo', 'Active', '2018-05-05 06:28:33'),
-(4, 'Louise Vitton Bag', 'vitton@vitton.usa.com', 323234938, 0, '45, Palmer Valley, 5th Crossing', 'Delaware', 'Palo Alto', 'Batticaloa', 'Active', '2018-05-05 06:29:41'),
-(6, 'Test Vendor', 'test@vendor.com', 43434, 47569937, 'Test address', 'Test address 2', 'Test City', 'Trincomalee', 'Active', '2018-05-05 06:53:14'),
-(7, 'Bags Co. Exporters Ltd.', '', 1111, 0, 'Sea Road, Bambalapitiya', '', '', 'Colombo', 'Active', '2018-05-15 10:36:54'),
-(8, 'New Bags Exporters', '', 191938930, 0, '123, A Road, B avenue, ', 'Gilford Crescent', 'Colpetty', 'Colombo', 'Active', '2018-05-16 12:36:53'),
-(9, 'A', 'a@gmail.com', 999995, 98866767, 'manila', 'Metro Manila', 'Manila City', 'Ampara', 'Active', '2020-07-30 11:40:25');
+(1, 'RS Components', '', 2343567, 0, '80, Ground Floor, ABC Shopping Complex', '46th Avenue', 'Kolpetty', 'Colombo', 'Active', '2018-05-05 05:48:44'),
+(2, 'Digi-Key Electronics', 'sample@volvo.com', 99828282, 283730183, '123, A Road, B avenue', 'Pitipana', 'Nugegoda', 'Mannar', 'Disabled', '2018-05-05 06:12:02'),
+(3, 'Park Electronics', '', 32323, 0, '34, Malwatta Road, Kottawa', 'Pannipitiya', 'Maharagama', 'Colombo', 'Active', '2018-05-05 06:28:33'),
+(4, 'Arrow Electronics', 'vitton@vitton.usa.com', 323234938, 0, '45, Palmer Valley, 5th Crossing', 'Delaware', 'Palo Alto', 'Batticaloa', 'Active', '2018-05-05 06:29:41');
 
 --
 -- Indexes for dumped tables
@@ -277,31 +274,31 @@ ALTER TABLE `customer`
 -- AUTO_INCREMENT for table `item`
 --
 ALTER TABLE `item`
-  MODIFY `productID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `productID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=249;
 
 --
 -- AUTO_INCREMENT for table `purchase`
 --
 ALTER TABLE `purchase`
-  MODIFY `purchaseID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `purchaseID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT for table `sale`
 --
 ALTER TABLE `sale`
-  MODIFY `saleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `saleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `userID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `userID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `vendor`
 --
 ALTER TABLE `vendor`
-  MODIFY `vendorID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `vendorID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

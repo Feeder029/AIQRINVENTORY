@@ -70,6 +70,7 @@ function DropdownOptions() {
         <div class="details">
         <div class="name">${item.I_Name}</div>
         <div class="legacycode" hidden>${item.I_LegacyCode}</div>
+        <div class="mobilecode" hidden>${item.I_MobileCode}</div>
         <div class="stock">Stock: ${item.I_Stock}</div>
         </div>
        `;
@@ -153,6 +154,7 @@ function Purchase(){
   // Get the selected item name from the dropdown
   const selectedItemName = document.querySelector('.dropdown-selected .name').textContent;
   const legacycode = document.querySelector('.dropdown-selected .legacycode').textContent;
+  const mobilecode = document.querySelector('.dropdown-selected .mobilecode').textContent;
   const LegacyVendorID = document.getElementById("vendor").options[document.getElementById("vendor").selectedIndex].getAttribute("legacy");
 
  
@@ -175,6 +177,7 @@ function Purchase(){
     unitPrice: price,
     totalCost: totalCost,
     legacycode:legacycode,
+    mobilecode:mobilecode,
     LegacyVendorID: LegacyVendorID
   };
   

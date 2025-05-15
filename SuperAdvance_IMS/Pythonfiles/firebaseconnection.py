@@ -6,6 +6,7 @@ import json
 import ai
 import api
 import itemqr
+
 def get_connection(database_name):
     return mysql.connector.connect(
         host='localhost',
@@ -109,50 +110,131 @@ def get_price_data(item):
         }
     }
 
-def Comparison(mobile):
-
+def Comparison(mysql_items):
     db = Cred()
-    
     products_ref = db.collection('products')
-    
     products_docs = products_ref.stream()
     
-    # Create a list to store all products
-    all_products = []
+    # Create a list to store all Firebase products
+    firebase_products = []
     
     for doc in products_docs:
-     # Get document data as dictionary
-     product_data = doc.to_dict()
+        # Get document data as dictionary
+        product_data = doc.to_dict()
+        
+        # Add document ID to the dictionary
+        product_data['document_id'] = doc.id
+        
+        # Add to our products list
+        firebase_products.append(product_data)
     
-     # Add document ID to the dictionary
-     product_data['document_id'] = doc.id
+    print(f"Total Firebase products found: {len(firebase_products)}")
     
-     # Add to our products list
-     all_products.append(product_data)
+    # Convert MySQL items to a dictionary with I_MobileCode as key for easy lookup
+    mysql_items_dict = {item['I_MobileCode']: item for item in mysql_items}
     
-    # Print all products
-    print(f"Total products found: {len(all_products)}")
+    # Process each Firebase product
+    for firebase_product in firebase_products:
+        mobile_code = firebase_product['document_id']
+        
+        if mobile_code not in mysql_items_dict:
+            # Product exists in Firebase but not in MySQL - Add it
+            print(f"Adding new product to MySQL: {firebase_product['name']} (ID: {mobile_code})")
+            get_item_price(
+                mobile_code,
+                firebase_product.get('name', 'N/A'),
+                firebase_product.get('price', 0),
+                firebase_product.get('quantity', 0),
+                firebase_product.get('description', 'N/A')
+            )
+        else:
+            # Product exists in both systems - Update MySQL record to match Firebase
+            mysql_item = mysql_items_dict[mobile_code]
+            update_local_from_firebase(
+                mysql_item,
+                firebase_product
+            )
+    
+    # Check for products in MySQL that are not in Firebase
+    firebase_ids = [product['document_id'] for product in firebase_products]
+    for mobile_code, mysql_item in mysql_items_dict.items():
+        if mobile_code not in firebase_ids:
+            print(f"Product {mysql_item['I_Name']} (ID: {mobile_code}) exists in MySQL but not in Firebase")
+            # Optionally: Add to Firebase or take other action
 
-    a = []
-
-    for array in mobile:
-        a.append(array['I_MobileCode'])
-
-    for product in all_products:
-     if product['document_id'] not in a:
-      print(f"Product ID: {product['document_id']}")
-      print(f"Name: {product.get('name', 'N/A')}")
-      print(f"Price: {product.get('price', 'N/A')}")
-      print(f"Quantity: {product.get('quantity', 'N/A')}")
-      print(f"Description: {product.get('description', 'N/A')}")
-      print('-' * 30)
-      get_item_price(product['document_id'],product.get('name', 'N/A'),product.get('price', 'N/A'),product.get('quantity', 'N/A'),product.get('description', 'N/A'))
-     else:
-        print("")
-        # for array in mobile:
-            # Update(array['I_Name'],array['I_Discount'],array['I_Stock'],array['I_UnitPrice'],array['I_Description'],array[''])
-            
-                # SELECT I_MobileCode, I_Name, I_Discount, I_UnitPrice, I_ImagePath, I_Stock, I_Description
+def update_local_from_firebase(mysql_item, firebase_product):
+    """Update MySQL databases with data from Firebase for existing products"""
+    mobile_code = firebase_product['document_id']
+    firebase_name = firebase_product.get('name', '')
+    firebase_price = firebase_product.get('price', 0)
+    firebase_stock = firebase_product.get('quantity', 0)
+    firebase_desc = firebase_product.get('description', '')
+    
+    # Only update if there are differences
+    if (mysql_item['I_Name'] != firebase_name or 
+        float(mysql_item['I_UnitPrice']) != float(firebase_price) or 
+        int(mysql_item['I_Stock']) != int(firebase_stock) or 
+        mysql_item['I_Description'] != firebase_desc):
+        
+        print(f"Updating product in MySQL: {firebase_name} (ID: {mobile_code})")
+        
+        try:
+            # Update ai_inventory database
+            with get_connection('ai_inventory') as aiconn:
+                cursor = aiconn.cursor()
+                
+                update_query = """
+                    UPDATE `item` 
+                    SET `I_Name` = %s, 
+                        `I_UnitPrice` = %s, 
+                        `I_Stock` = %s, 
+                        `I_Description` = %s
+                    WHERE `I_MobileCode` = %s
+                """
+                
+                cursor.execute(update_query, (
+                    firebase_name,
+                    firebase_price,
+                    firebase_stock,
+                    firebase_desc,
+                    mobile_code
+                ))
+                
+                # Get the legacy code to update legacy database
+                legacy_query = "SELECT I_LegacyCode FROM `item` WHERE `I_MobileCode` = %s"
+                cursor.execute(legacy_query, (mobile_code,))
+                result = cursor.fetchone()
+                
+                aiconn.commit()
+                
+                if result and result[0]:
+                    legacy_code = result[0]
+                    
+                    # Update shop_inventory database
+                    with get_connection('shop_inventory') as legacyconn:
+                        cursor2 = legacyconn.cursor()
+                        
+                        legacy_update_query = """
+                            UPDATE `item` 
+                            SET `itemName` = %s, 
+                                `unitPrice` = %s, 
+                                `stock` = %s, 
+                                `description` = %s
+                            WHERE `itemNumber` = %s
+                        """
+                        
+                        cursor2.execute(legacy_update_query, (
+                            firebase_name,
+                            firebase_price,
+                            firebase_stock,
+                            firebase_desc,
+                            legacy_code
+                        ))
+                        
+                        legacyconn.commit()
+                        
+        except mysql.connector.Error as err:
+            print(f"Database Error during update: {err}")
 
 def get_item_price(MobileCode, Name, Price, Stock, Desc):
     # Get price data from the get_price_data function
@@ -176,7 +258,7 @@ def get_item_price(MobileCode, Name, Price, Stock, Desc):
     WalmartSP = suggestion['sources']['walmart']['price']
     WalmartDetails = suggestion['sources']['walmart']['details']
 
-    qrpath, qrcode = itemqr.generate_qr(MobileCode, Name, Price,Stock)
+    qrpath, qrcode = itemqr.generate_qr(MobileCode, Name, Price, Stock)
 
     
     """Add item to AI inventory database"""
@@ -201,7 +283,7 @@ def get_item_price(MobileCode, Name, Price, Stock, Desc):
             MCSP, MCDetails, 
             AmazonSP, AmazonDetails, 
             WalmartSP, WalmartDetails,
-            qrcode,qrpath
+            qrcode, qrpath
         ))
             
         inserted_id = cursor.lastrowid
@@ -267,7 +349,6 @@ def newproduct(ID, Name, Desc, Price, Quantity, URL):
         return False, error_message
 
 def update_product(ID, Name=None, Desc=None, Price=None, Quantity=None, URL=None):
-
     try:
         db = Cred()
         product_id = str(ID)
@@ -313,14 +394,59 @@ def update_product(ID, Name=None, Desc=None, Price=None, Quantity=None, URL=None
         return False, error_message    
  
 
+def update_quantity(ID, quantity_change):
+    try:
+        
+        try:
+            quantity_change = int(quantity_change)
+        except (ValueError, TypeError):
+            return False, f"Invalid quantity value: {quantity_change}. Must be a number."
+            
+
+        db = Cred()
+        product_id = str(ID)
+        product_ref = db.collection('products').document(product_id)
+        
+        # Get current document
+        doc = product_ref.get()
+        if not doc.exists:
+            return False, f"Product with ID {product_id} not found"
+            
+        # Get current data and quantity
+        data = doc.to_dict()
+        current_quantity = int(data.get('quantity', 0))
+        
+        # Calculate new quantity (ensure it doesn't go below 0)
+        new_quantity = max(0, current_quantity + quantity_change)
+        
+        # Update quantity in Firestore
+        data['quantity'] = new_quantity
+        
+        # Update qr_data
+        qr_data = {
+            "id": product_id,
+            "name": data.get('name', ''),
+            "price": str(data.get('price', '')),
+            "quantity": str(new_quantity)
+        }
+        data['qr_data'] = json.dumps(qr_data)
+        
+        # Save back to Firestore
+        product_ref.set(data)
+        
+        operation = "added" if quantity_change > 0 else "removed"
+        amount = abs(quantity_change)
+        
+        return True, f"Successfully {operation} {amount} items. New quantity for {data.get('name', '')} (ID: {product_id}): {new_quantity}"
+        
+    except Exception as e:
+        error_message = f"Error updating quantity: {str(e)}"
+        print(error_message)  # Log the error
+        return False, error_message
+
 def syncronize():
     items = Info()
     Comparison(items)
 
-#    mobile = getMobileCodes()
-#    Comparison(mobile)
-   
-
 if __name__ == "__main__":
     syncronize()
-

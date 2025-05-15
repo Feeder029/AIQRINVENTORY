@@ -230,7 +230,7 @@ class PriceScraper:
             
             # API headers
             headers = {
-                'x-rapidapi-key': "d568155300msh716e81d8be7c8a2p14190ajsn96af85a3334c",
+                'x-rapidapi-key': "ab5b55870bmshc0edfa2e68cff61p1ed139jsn3221542aadd0",
                 'x-rapidapi-host': "realtime-walmart-data.p.rapidapi.com"
             }
             

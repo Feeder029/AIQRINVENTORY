@@ -1,4 +1,64 @@
-        // ARIMA Forecast Chart
+
+import { fetchData } from '../Function/getdata.js';
+
+function DisplaySuggestions(){
+    fetchData("displayitems", data => {
+        let display = `<thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>My Shop</th>
+                                <th>Suggested</th>
+                                <th>eBay</th>
+                                <th>Microcenter</th>
+                                <th>Amazon</th>
+                                <th>Walmart</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+        if(data.items && data.items.length > 0) {
+            data.items.forEach(item => {
+
+                const Wallmart = item.I_WallmartSuggestedPrice ? "$" + item.I_WallmartSuggestedPrice : "N/A";
+                const Amazon = item.I_AmazonSuggestedPrice ?  "$" + item.I_AmazonSuggestedPrice : "N/A";
+                const MC = item.I_MCSuggestedPrice ?  "$" + item.I_MCSuggestedPrice : "N/A";
+
+                display += `
+                            <tr>
+                                <td>${item.I_Name}</td>
+                                <td class="price-comparison">$${item.I_UnitPrice}</td>
+                                <td>$${item.I_SuggestedPrice}</td>
+                                <td>$${item.I_EbaySuggestedPrice}</td>
+                                <td>${MC}</td>
+                                <td>${Amazon}</td>
+                                <td>${Wallmart}</td>
+                            </tr>`
+            })
+
+            display += `
+            </tbody>`;
+        }
+
+        document.getElementById('PriceComparison').innerHTML = display
+
+    });
+}
+
+DisplaySuggestions();
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      // ARIMA Forecast Chart
         const forecastCtx = document.getElementById('forecastChart').getContext('2d');
         const forecastChart = new Chart(forecastCtx, {
             type: 'line',

@@ -168,7 +168,7 @@ function SaveItems() {
             };
 
             popoverupdate("secondaddpage","none")
-            
+            document.getElementById('AddItem').hidePopover();
             
             // Ask for confirmation before submitting
             Swal.fire({
@@ -449,6 +449,8 @@ function Next() {
     .then(data => {
         if (data.success) { 
             console.log("Price data received:", data);
+
+
 
 
             SP = data.suggestedPrice.toFixed(2);
