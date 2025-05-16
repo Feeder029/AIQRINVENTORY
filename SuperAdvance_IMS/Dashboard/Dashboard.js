@@ -2,7 +2,14 @@
 import { fetchData } from '../Function/getdata.js';
 
 function DisplaySuggestions(){
+
+    let total = 0;
+    let under = 0;
+    let over = 0;
+    let reasonable = 0;
+
     fetchData("displayitems", data => {
+
         let display = `<thead>
                             <tr>
                                 <th>Product</th>
@@ -18,6 +25,20 @@ function DisplaySuggestions(){
 
         if(data.items && data.items.length > 0) {
             data.items.forEach(item => {
+
+                total++;
+
+                switch(item.PriceStatus){
+                    case "Fit":
+                        reasonable++
+                    break
+                    case "Underprice":
+                        under++
+                    break
+                    case "Overprice":
+                        over++
+                    break
+                }
 
                 const Wallmart = item.I_WallmartSuggestedPrice ? "$" + item.I_WallmartSuggestedPrice : "N/A";
                 const Amazon = item.I_AmazonSuggestedPrice ?  "$" + item.I_AmazonSuggestedPrice : "N/A";
@@ -39,70 +60,61 @@ function DisplaySuggestions(){
             </tbody>`;
         }
 
+        Data(total,under,over,reasonable)
         document.getElementById('PriceComparison').innerHTML = display
 
     });
+
+    fetchData("TopFiveItems",data=>{
+
+        let display  = ``
+        let i = 1
+
+        if(data.Top && data.Top.length > 0) {
+
+            data.Top.forEach(item => {
+
+                console.log(item)
+
+                display += ` <li>
+                        <div class="item-details">
+                            <div class="item-icon">${i}</div>
+                            <div>
+                                <div class="item-name">${item.I_Name}</div>
+                                <div class="progress-container">
+                                    <div class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-sales">${item.Total_Quantity_Sold} sold</div>
+                    </li>`
+                i++
+            })
+
+            document.getElementById('Top5').innerHTML = display
+        }
+    })
+
 }
 
 DisplaySuggestions();
       
+function Data(total,under,over,reasonable){
+
+    document.getElementById('Total').textContent = total
+    document.getElementById('Under').textContent = under
+    document.getElementById('Over').textContent = over
+    document.getElementById('Reasonable').textContent = reasonable
+
+}
       
       
       
       
       
+    
       
-      
-      
-      
-      
-      
-      
-      // ARIMA Forecast Chart
-        const forecastCtx = document.getElementById('forecastChart').getContext('2d');
-        const forecastChart = new Chart(forecastCtx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                datasets: [{
-                    label: 'Actual Sales',
-                    data: [65, 72, 78, 84, 95, 102, 110, null],
-                    borderColor: '#555',
-                    backgroundColor: 'transparent',
-                    tension: 0.3,
-                    pointBackgroundColor: '#555'
-                }, {
-                    label: 'Forecasted Sales',
-                    data: [null, null, null, null, null, null, 110, 118],
-                    borderColor: '#888',
-                    backgroundColor: 'transparent',
-                    borderDash: [5, 5],
-                    tension: 0.3,
-                    pointBackgroundColor: '#888'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        grid: {
-                            color: '#eee'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
+
         
         // Inventory Distribution Chart
         const distributionCtx = document.getElementById('inventoryDistribution').getContext('2d');

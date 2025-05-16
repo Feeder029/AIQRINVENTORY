@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electronic Inventory System</title>
+    <link rel="stylesheet" href="login.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">ELECTRONIC INVENTORY SYSTEM</div>
+            <h1>Welcome Back</h1>
+            <p>To manage our electronic inventory efficiently with our price suggestion and item keeping system. Log in to access your dashboard or create a new account to get started.</p>
+        </div>
+        <div class="content">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('login')">Login</div>
+                <div class="tab" onclick="showTab('register')">Register</div>
+            </div>
+            
+            <div id="login-form" class="form-container active">
+                <div class="form-group">
+                    <label for="user">Username</label>
+                    <input type="user" id="user"  placeholder="Enter your Usernamw">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password">
+                </div>
+                <div class="forgot-password">
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="" onclick="GetUser()">Login</button>
+                <div class="form-footer">
+                    Don't have an account? <a href="#" onclick="showTab('register')">Register here</a>
+                </div>
+            </div>
+            
+            <div id="register-form" class="form-container">
+                <div class="form-group">
+                    <label for="fullname">Full Name</label>
+                    <input type="text" id="fullname" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">Email Address</label>
+                    <input type="email" id="reg-email" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" placeholder="Create a password">
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" placeholder="Confirm your password">
+                </div>
+                <button type="submit">Create Account</button>
+                <div class="form-footer">
+                    Already have an account? <a href="#" onclick="showTab('login')">Login here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module"src="login.js"></script>
+
+</body>
+</html>

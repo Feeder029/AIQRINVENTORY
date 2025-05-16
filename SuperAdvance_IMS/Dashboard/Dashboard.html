@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <link rel="stylesheet" href="Dashboard.css">
+    <link rel="stylesheet" href="Dashboard.css?v=1.1.0">
 </head>
 <body>
     <div class="dashboard">
@@ -17,23 +17,19 @@
         <div class="stats-container">
             <div class="stat-card">
                 <h3>Total Items</h3>
-                <p>1,245</p>
-                <div class="change positive-change">+5% from last month</div>
+                <p id="Total">0</p>
             </div>
             <div class="stat-card">
-                <h3>Low Stock Items</h3>
-                <p>23</p>
-                <div class="change negative-change">-2 since yesterday</div>
+                <h3>Overprice Items</h3>
+                <p id="Over">0</p>
             </div>
             <div class="stat-card">
-                <h3>Profit Margin</h3>
-                <p>24.8%</p>
-                <div class="change positive-change">+1.2% this month</div>
+                <h3>Underprice Items</h3>
+                <p id="Under">0</p>
             </div>
             <div class="stat-card">
-                <h3>Monthly Revenue</h3>
-                <p>$85,240</p>
-                <div class="change positive-change">+12% from last month</div>
+                <h3>Reasonable Items</h3>
+                <p id="Reasonable">0</p>
             </div>
         </div>
         
@@ -60,88 +56,13 @@
                 <div class="chart-header">
                     <div class="chart-title">Top 5 Most Sold Items</div>
                 </div>
-                <ul class="top-items-list">
-                    <li>
-                        <div class="item-details">
-                            <div class="item-icon">1</div>
-                            <div>
-                                <div class="item-name">Gaming Mouse X1</div>
-                                <div class="item-category">Peripherals</div>
-                                <div class="progress-container">
-                                    <div class="progress-bar" style="width: 92%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="item-sales">254 sold</div>
-                    </li>
-                    <li>
-                        <div class="item-details">
-                            <div class="item-icon">2</div>
-                            <div>
-                                <div class="item-name">Wireless Headphones</div>
-                                <div class="item-category">Audio</div>
-                                <div class="progress-container">
-                                    <div class="progress-bar" style="width: 78%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="item-sales">187 sold</div>
-                    </li>
-                    <li>
-                        <div class="item-details">
-                            <div class="item-icon">3</div>
-                            <div>
-                                <div class="item-name">USB-C Fast Charger</div>
-                                <div class="item-category">Accessories</div>
-                                <div class="progress-container">
-                                    <div class="progress-bar" style="width: 65%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="item-sales">158 sold</div>
-                    </li>
-                    <li>
-                        <div class="item-details">
-                            <div class="item-icon">4</div>
-                            <div>
-                                <div class="item-name">Mechanical Keyboard Pro</div>
-                                <div class="item-category">Peripherals</div>
-                                <div class="progress-container">
-                                    <div class="progress-bar" style="width: 52%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="item-sales">132 sold</div>
-                    </li>
-                    <li>
-                        <div class="item-details">
-                            <div class="item-icon">5</div>
-                            <div>
-                                <div class="item-name">External SSD 1TB</div>
-                                <div class="item-category">Storage</div>
-                                <div class="progress-container">
-                                    <div class="progress-bar" style="width: 45%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="item-sales">118 sold</div>
-                    </li>
+                <ul class="top-items-list" id="Top5">
+
                 </ul>
             </div>
         </div>
         
         <div class="grid-container">
-            <div class="chart-container">
-                <div class="chart-header">
-                    <div class="chart-title">Sales Forecast (ARIMA Model)</div>
-                </div>
-                <canvas id="forecastChart"></canvas>
-            </div>
-            
-            <div class="chart-container">
-                <div class="chart-header">
-                    <div class="chart-title">Suggested Price Adjustments</div>
-                </div>
                 <table class="suggested-price-table">
                     <thead>
                         <tr>

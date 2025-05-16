@@ -94,7 +94,6 @@
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 8px var(--shadow-color);
-            height: 300px;
             overflow: scroll;
         }
         

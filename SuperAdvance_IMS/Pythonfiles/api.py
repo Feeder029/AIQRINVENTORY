@@ -55,6 +55,18 @@ def GetProducts():
     
     return GET(sql,"items","I_Image")
 
+
+
+@app.route('/api/getuser', methods=['GET'])
+def GetUser(): 
+
+    sql = """
+    SELECT `userID`, `fullName`, `username`, `password`, `status` FROM `user`
+    """
+
+    return GET(sql,"user")
+
+
 # For the Display on Purchases
 @app.route('/api/displaypurchases', methods=['GET'])
 def GetPurchase(): 
@@ -194,6 +206,19 @@ def GET(statement,dataname,Image=None):
         if 'conn' in locals() and conn.is_connected():
             cursor.close()
             conn.close()
+
+@app.route('/api/TopFiveItems', methods=['GET'])
+def GetTop5():
+    sql = """
+    SELECT 
+    `I_Name`, 
+    SUM(`S_Quantity`) AS Total_Quantity_Sold
+    FROM `salelist`
+    GROUP BY `I_Name`
+    ORDER BY Total_Quantity_Sold DESC
+    LIMIT 5;
+    """
+    return GET(sql,"Top")
 
 
 def POST(conn, statement, inputs):
