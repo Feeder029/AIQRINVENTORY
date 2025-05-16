@@ -1,5 +1,5 @@
 window.onload = function () {
-    const defaultURL = "../SuperAdvance_IMS/Items/items.html?v=3.2.0";
+    const defaultURL = "../SuperAdvance_IMS/Items/items.html?v=3.2.8";
     const iframe = document.querySelector("iframe[name='iframe-main']");
     const links = document.querySelectorAll('.nav-link');
 

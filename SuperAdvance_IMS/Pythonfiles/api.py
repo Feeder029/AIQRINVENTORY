@@ -34,7 +34,7 @@ def get_connection2():
 @app.route('/api/displayitems', methods=['GET'])
 def GetProducts():
     synchronize.synchronize_inventory()
-    firebaseconnection.syncronize()
+    # firebaseconnection.syncronize()
 
     sql = """
     SELECT 
@@ -51,6 +51,7 @@ def GetProducts():
     END AS `PriceStatus`
 
     FROM `item`
+    WHERE `I_Status` LIKE "Active"
     """
     
     return GET(sql,"items","I_Image")
@@ -475,8 +476,6 @@ def AddNewSale():
         if conn:
             conn.close()
 
-
-
 @app.route('/api/insertitems', methods=['POST'])
 def AddNewItem():
     conn = None
@@ -683,6 +682,76 @@ def ItemUpdate():
         if conn2 and conn2.is_connected():
             conn2.close()
 
+
+@app.route('/api/ItemdDelete', methods=['POST'])
+def ItemdDelete():
+    conn = None
+    conn2 = None
+    try:
+        conn = get_connection()
+        conn2 = get_connection2()
+
+        data = request.json
+        ItemLegacyID = data.get("ItemLegacyID")
+        Status = "Disabled"
+
+        cursor = conn.cursor()
+        cursor2 = conn2.cursor()
+
+        print(f"ID is {ItemLegacyID}")
+
+
+        aiquery = """
+            UPDATE `item` SET `I_Status`= %s WHERE `I_LegacyCode`= %s
+        """
+
+        cursor.execute(aiquery, (
+            Status,ItemLegacyID
+        ))
+
+        legacyquery = """
+            UPDATE `item` SET  `status`= %s  WHERE `itemNumber`= %s 
+        """
+
+        cursor2.execute(legacyquery, (
+            Status,ItemLegacyID
+        ))
+
+        # Commit changes
+        conn.commit()
+        conn2.commit()
+        print(f"{ItemLegacyID} Successfully Updated")
+
+        return jsonify({
+            "status": "success",
+            "message": "Item updated successfully."
+        })
+    
+    except mysql.connector.Error as err:
+        if conn:
+            conn.rollback()
+        if conn2:
+            conn2.rollback()
+        print(f"Database Error: {err}")
+        return jsonify({"status": "error", "message": str(err)}), 500
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        if conn2:
+            conn2.rollback()
+        print(f"Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'cursor2' in locals() and cursor2:
+            cursor2.close()
+        if conn and conn.is_connected():
+            conn.close()
+        if conn2 and conn2.is_connected():
+            conn2.close()
+
+
 @app.route('/api/getsales', methods=['POST'])
 def InputItems():
     if request.method == 'POST':
@@ -723,6 +792,9 @@ def InputItems():
         return jsonify({'success': True, 'message': 'Item added successfully'})
     
     return jsonify({'success': False, 'message': 'Invalid request method'})
+
+
+
 
 @app.route('/api/getrecommendedprice', methods=['POST'])
 def GetPrice():

@@ -77,7 +77,7 @@ function displayItems() {
                                     <div class="separator">&nbsp;</div>
                                     <div class="dropdown-option" onclick='EditAddItem(${itemInfoJSON})' popovertarget="AddItem"><i class="fa-solid fa-pen-to-square"></i> Edit</div>
                                     <div class="separator">&nbsp;</div>
-                                    <div class="dropdown-option"><i class="fa-solid fa-trash"></i> Delete</div>
+                                    <div class="dropdown-option" onclick='DeleteItem(${itemInfoJSON})'><i class="fa-solid fa-trash"></i> Delete</div>
                                     <div class="separator">&nbsp;</div>
                                     <div class="dropdown-option" onclick='OpenQRCode(${itemInfoJSON})' popovertarget="QRIMG"><i class="fa-solid fa-square-plus" ></i> QR Code </div>
                                 </div>
@@ -92,6 +92,52 @@ function displayItems() {
         } else {
             console.log("No items found");
             display = "<p>No items found in inventory</p>";
+        }
+    });
+}
+
+function DeleteItem(datas) {
+    const Name = datas.Item;
+    
+    Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to delete "${Name}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const itemData = {
+                ItemLegacyID: datas.L_ID
+            };
+            
+            fetch("http://localhost:5000/api/ItemdDelete", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(itemData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === "success") {
+                    Swal.fire('Deleted!', `${Name} has been deleted successfully.`, 'success');
+                    displayItems();
+                } else {
+                    throw new Error(data.message || 'Unknown error occurred');
+                }
+            })
+            .catch(error => {
+                console.error("Delete operation failed:", error);
+                Swal.fire('Error!', `Failed to delete item: ${error.message}`, 'error');
+            });
         }
     });
 }
@@ -116,7 +162,7 @@ function ChangeValues(itemData) {
 }
 
 window.ChangeValues = ChangeValues;
-
+window.DeleteItem = DeleteItem;
 window.SaveItems = SaveItems;
 window.Next = Next;
 
@@ -296,7 +342,7 @@ function EditAddItem(itemData){
 
   document.getElementById('Title').textContent = 'EDIT ITEM';
   document.getElementById('id').textContent = itemData.L_ID;
-  document.getElementById('UnitLabel').textContent = `Unit Price | Suggested Price: $${itemData.SuggestedPrice} ($${itemData.MaxPriceRange} - $${itemData.MinPriceRange})`;
+  document.getElementById('UnitLabel').textContent = `Unit Price | Suggested Price: $${itemData.SuggestedPrice} ($${itemData.MinPriceRange} - $${itemData.MaxPriceRange})`;
 
   // Fill in the form with the item data
   document.getElementById('ProductName').value = itemData.Item;
