@@ -1,4 +1,1 @@
-# AIQRINVENTORY
-
-
-IPT + HCI + APPDEV FUSION
+Inventory System with QR Scanning and Forecasting AI
